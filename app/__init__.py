@@ -3,8 +3,6 @@ import os
 from dotenv import load_dotenv
 from flask import Flask
 
-from app.badminton_player import api
-
 load_dotenv()
 is_production = os.getenv("ENVIRONMENT") == "production"
 
