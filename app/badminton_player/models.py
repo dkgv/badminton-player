@@ -133,6 +133,9 @@ class Match:
     def get_winner(self) -> str:
         return "home" if self.home_team_points > self.away_team_points else "away"
 
+    def is_tie(self) -> bool:
+        return self.home_team_points == self.away_team_points
+
     def on_winning_team(self, player_name: str) -> bool:
         home_players = []
         away_players = []
