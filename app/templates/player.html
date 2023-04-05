@@ -1,0 +1,189 @@
+{% set title = "🏸 " ~ player.name %}
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-light">
+    <div class="container py-5">
+        <div class="row">
+            <div class="col">
+                <h1 class="fs-1">{{ title }}</h1>
+                <hr/>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col me-1">
+                <h2>Profile</h2>
+                <table class="table table-borderless">
+                    <tr>
+                        <th>Name</th>
+                        <td>{{ player.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Age</th>
+                        <td>{{ player.get_age() }} år</td>
+                    </tr>
+                    <tr>
+                        <th>Club</th>
+                        <td>{{ player.club_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Points</th>
+                        <td>
+                            {{ standings[0].num_points }}
+
+                            {% set delta = profile.season_start_points - standings[0].num_points %}
+                            {% if delta > 0 %}
+                            (<span class="text-danger">-{{ delta }} 📉</span>)
+                            {% else %}
+                            (<span class="text-success">+{{ delta|abs }} 📈</span>)
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Streak</th>
+                        <td>
+                            {% if games|length > 0 %}
+                            {% for game in games %}
+                            {% if game.won_by(player.name) %}
+                            <span class="badge bg-success">W</span>
+                            {% else %}
+                            <span class="badge bg-danger">L</span>
+                            {% endif %}
+                            {% endfor %}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col ms-1">
+                <h2>Ranks</h2>
+                <table class="table table-borderless">
+                    <tbody>
+                    <tr>
+                        <th>Category</th>
+                        <th>Matches</th>
+                        <th>Points</th>
+                        <th>Ranking</th>
+                        <th>Tier</th>
+                    </tr>
+                    {% for s in standings %}
+                    <tr>
+                        <td>{{ s.category }}</td>
+                        <td>{{ s.num_matches }}</td>
+                        <td>{{ s.num_points }}</td>
+                        <td>
+                            {% if s.ranking != -1 %}
+                            {{ s.ranking }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>{{ s.tier }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col">
+            <h2>Matches</h2>
+
+            {% if matches|length == 0 %}
+            <p class="text-muted">No matches found.</p>
+            {% else %}
+            <div class="accordion" id="accordionExample">
+                {% for match in matches %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <a class="accordion-button text-decoration-none {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#a{{ match.id }}">
+                            <div class="d-flex justify-content-between align-items-center w-100">
+                                <div>
+                                    {% if match.on_winning_team(player.name) %}
+                                    <span class="badge bg-success me-3">W</span>
+                                    {% else %}
+                                    <span class="badge bg-danger me-3">L</span>
+                                    {% endif %}
+                                    {{ match.home_team }} vs {{ match.away_team }} <span class="text-muted">({{ match.home_team_points }}-{{ match.away_team_points }})</span>
+                                </div>
+                                {% if match.date %}
+                                <span class="me-3 text-muted">{{ match.date.strftime("%d %b, %Y") }}</span>
+                                {% else %}
+                                <span class="me-3 text-muted">Forfeit</span>
+                                {% endif %}
+                            </div>
+                        </a>
+                    </h2>
+                    <div id="a{{ match.id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th>
+                                    </th>
+                                    <th>
+                                        🏠 {{ match.home_team }}
+                                    </th>
+                                    <th>
+                                        🚌 {{ match.away_team }}
+                                    </th>
+                                    <th>
+                                        1
+                                    </th>
+                                    <th>
+                                        2
+                                    </th>
+                                    <th>
+                                        3
+                                    </th>
+                                </tr>
+                                {% for game in match.games %}
+                                {% set class = "" %}
+                                {% if game.contains(player.name) %}
+                                {% set class = "table-success" if game.won_by(player.name) else "table-danger" %}
+                                {% endif %}
+
+                                <tr class="{{ class }}">
+                                    <td>
+                                        {{ game.category }}
+                                    </td>
+                                    <td>
+                                        {{ game.home_player1 }}{% if game.home_player2 %} / {{ game.home_player2 }}{% endif %}
+                                    </td>
+                                    <td>
+                                        {{ game.away_player1 }}{% if game.away_player2 %} / {{ game.away_player2 }}{% endif %}
+                                    </td>
+                                    {% set winner = game.get_winner() %}
+                                    <td>
+                                        {% if game.sets|length > 0 %}
+                                        {{ game.sets[0].to_html(winner) }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if game.sets|length > 1 %}
+                                        {{ game.sets[1].to_html(winner) }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if game.sets|length > 2 %}
+                                        {{ game.sets[2].to_html(winner) }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

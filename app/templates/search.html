@@ -1,0 +1,94 @@
+{% set title = "🏸 Find spiller: \"" ~ query ~ "\"" %}
+{% set color = "bg-light" %}
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-3">
+    <div class="row">
+        <div class="col">
+            {% if not players %}
+            <h1 class="mb-4">No players found for "{{ query }}" :(</h1>
+
+            <p class="text-muted">
+                Try searching for first name only.
+            </p>
+            {% else %}
+            <h1 class="mb-4">📋 {{ players|length }} results for "{{ query }}"</h1>
+
+            {% set placeholder = "Filter \"" ~ query ~ "\" results" %}
+            <input class="form-control" id="filter-input" type="text" placeholder="{{ placeholder }}" onkeydown="if (event.key === 'Enter') filterResults()" autofocus>
+
+            <div class="table-responsive">
+                <table id="player-table" class="table table-borderless">
+                    <thead class="thead-light">
+                    <tr>
+                        <th class="col-6">Name</th>
+                        <th class="col-6">Club</th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    const table = document.getElementById('player-table');
+    const players = JSON.parse('{{ players|tojson }}');
+
+    const ths = table.querySelectorAll('th');
+    ths.forEach((th, i) => {
+        th.addEventListener('click', () => {
+            sortTable(i);
+        });
+    });
+
+    const filterInput = document.getElementById('filter-input');
+    filterInput.addEventListener('keyup', () => {
+        filterTable(filterInput.value);
+    });
+
+    function renderTable(filteredPlayers) {
+        const tbody = table.querySelector('tbody');
+
+        // clear all rows
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach((row) => {
+            tbody.removeChild(row);
+        });
+
+        filteredPlayers.forEach((player) => {
+            const tr = document.createElement('tr');
+
+            const nameTd = document.createElement('td');
+            const nameLink = document.createElement('a');
+            nameLink.classList.add('text-decoration-none');
+            nameLink.href = '/player/' + player.id;
+            nameLink.textContent = player.name;
+            nameTd.appendChild(nameLink);
+            tr.appendChild(nameTd);
+
+            const clubTd = document.createElement('td');
+            clubTd.textContent = player.club_name;
+            tr.appendChild(clubTd);
+
+            tbody.appendChild(tr);
+        });
+    }
+
+    function filterTable(query) {
+        query = query.toUpperCase();
+        const filteredPlayers = players.filter((player) => {
+            const nameValue = player.name.toUpperCase();
+            const clubValue = player.club_name.toUpperCase();
+            return nameValue.includes(query) || clubValue.includes(query);
+        });
+        renderTable(filteredPlayers);
+    }
+
+    // Initialize table
+    renderTable(players);
+</script>
+
+{% endblock %}
