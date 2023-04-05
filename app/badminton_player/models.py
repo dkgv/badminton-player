@@ -155,10 +155,9 @@ class Match:
             players = home_players if home_players else away_players
             return player_name in players
 
-        if self.get_winner() == "home":
-            return player_name in self.home_team
-        else:
-            return player_name in self.away_team
+        winner = self.get_winner()
+        return player_name in home_players if winner == "home" else player_name in away_players
+
 
 
 @dataclass
