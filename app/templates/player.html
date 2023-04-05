@@ -29,6 +29,9 @@
                     <tr>
                         <th>Points</th>
                         <td>
+                            {% if not standings or standings|length == 0 %}
+                            -
+                            {% else %}
                             {{ standings[0].num_points }}
 
                             {% set delta = profile.season_start_points - standings[0].num_points %}
@@ -36,6 +39,7 @@
                             (<span class="text-danger">-{{ delta }} 📉</span>)
                             {% else %}
                             (<span class="text-success">+{{ delta|abs }} 📈</span>)
+                            {% endif %}
                             {% endif %}
                         </td>
                     </tr>
@@ -59,6 +63,9 @@
             </div>
             <div class="col ms-1">
                 <h2>Ranks</h2>
+                {% if not standings or standings|length == 0 %}
+                <p>-</p>
+                {% else %}
                 <table class="table table-borderless">
                     <tbody>
                     <tr>
@@ -85,6 +92,7 @@
                     {% endfor %}
                     </tbody>
                 </table>
+                {% endif %}
             </div>
         </div>
     </div>

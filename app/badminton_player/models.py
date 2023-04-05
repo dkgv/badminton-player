@@ -171,7 +171,7 @@ class Player:
 
     def get_age(self) -> int:
         today = datetime.today()
-        return (
+        return abs(
             today.year
             - self.birth_date.year
             - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))

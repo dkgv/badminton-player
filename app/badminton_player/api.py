@@ -15,6 +15,8 @@ from typing import Dict, List
 
 import pandas as pd
 import requests
+from bs4 import BeautifulSoup
+
 from app.badminton_player.models import (
     Game,
     Match,
@@ -24,7 +26,6 @@ from app.badminton_player.models import (
     Set,
     Standing,
 )
-from bs4 import BeautifulSoup
 
 
 class Client:
@@ -208,8 +209,12 @@ class Client:
             t for t in tables if not t.find("td", text=re.compile(r"\d\d\d\d/\d\d\d\d"))
         ]
 
+
         cells = tables[0].find_all("td")
-        points_at_start = int(cells[1].text)
+        if len(cells) > 1:
+            points_at_start = int(cells[1].text)
+        else:
+            points_at_start = -1
 
         def parse_as_df(table) -> pd.DataFrame:
             columns = []
@@ -243,18 +248,21 @@ class Client:
 
         # level_ = tables[0] # niveau ved sæsonstart
         # tournaments = parse_as_df(tables[3]) # turneringer
-        standings = parse_as_df(tables[1])
+        if len(tables) > 1:
+            standings = parse_as_df(tables[1])
 
-        standings = standings.apply(
-            lambda x: Standing(
-                category=x["Rangliste"],
-                tier=x["Række"],
-                num_points=int(x["Point"]),
-                num_matches=int(x["Kampe"]),
-                ranking=x["Placering"] if x["Placering"] else -1,
-            ),
-            axis=1,
-        )
+            standings = standings.apply(
+                lambda x: Standing(
+                    category=x["Rangliste"],
+                    tier=x["Række"],
+                    num_points=int(x["Point"]),
+                    num_matches=int(x["Kampe"]),
+                    ranking=x["Placering"] if x["Placering"] else -1,
+                ),
+                axis=1,
+            )
+        else:
+            standings = pd.Series()
 
         sort = 0
 

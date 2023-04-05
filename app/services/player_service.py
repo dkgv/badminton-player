@@ -5,11 +5,12 @@ from threading import Thread
 from typing import List, Optional
 
 import supabase
+from postgrest.exceptions import APIError
+
 from app.badminton_player import api
 from app.badminton_player.models import Match, Player, PlayerMeta, Standing
 from app.services.models import PlayerProfile
 from app.utils import supabase_utils
-from postgrest.exceptions import APIError
 
 badminton_player_client = api.Client()
 supabase_client = supabase.create_client(
@@ -64,11 +65,14 @@ def get_player_profile(player_id: int) -> Optional[PlayerProfile]:
     standings = _try_find_standings(player_id)
     if not standings:
         print(f"Could not find standing for player with id {player_id}")
-        return None
 
     matches = _try_find_matches(player_id)
+    if not matches:
+        print(f"Could not find matches for player with id {player_id}")
 
     games = _try_find_games(player.name, matches)
+    if not games:
+        print(f"Could not find games for player with id {player_id}")
 
     meta = badminton_player_client.get_profile(player_id)
     if not meta:
