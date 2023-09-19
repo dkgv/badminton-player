@@ -9,6 +9,7 @@ recommendation: leave
 """
 
 import re
+import time
 from datetime import datetime
 from functools import lru_cache
 from typing import Dict, List
@@ -32,13 +33,18 @@ class Client:
     def __init__(self) -> None:
         self.base_url = "https://www.badmintonplayer.dk"
 
-    @lru_cache(maxsize=1)
     def _get_context_key(self) -> str:
+        one_day = 24 * 60 * 60
+        ttl_hash = round(time.time() / one_day)
+        return self._extract_context_key(ttl_hash)
+
+    @lru_cache(maxsize=1)
+    def _extract_context_key(self, timestamp) -> str:
         r = requests.get(self.base_url)
         soup = BeautifulSoup(r.text, features="lxml")
         scripts = soup.find_all("script")
         for s in scripts:
-            if "SR_CallbackContext" not in s.text:
+            if "var SR_CallbackContext" not in s.text:
                 continue
 
             part = s.text.split("SR_CallbackContext = ")[1]
@@ -89,7 +95,7 @@ class Client:
             club_name=json_obj["d"]["clubname"],
         )
 
-    def search_player(self, name: str, club: str = None) -> List[Player]:
+    def search_player(self, name: str, club: str | None = None) -> List[Player]:
         json_data = {
             "callbackcontextkey": self._get_context_key(),
             "selectfunction": "SPSel1",
@@ -208,7 +214,6 @@ class Client:
         tables = [
             t for t in tables if not t.find("td", text=re.compile(r"\d\d\d\d/\d\d\d\d"))
         ]
-
 
         cells = tables[0].find_all("td")
         if len(cells) > 1:
