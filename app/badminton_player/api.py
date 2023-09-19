@@ -237,6 +237,7 @@ class Client:
                 if len(cells) != len(columns):
                     print("Could not parse row", row)
                     print("Expected", len(columns), "columns, got", len(cells))
+                    continue
 
                 df_row = {}
 
