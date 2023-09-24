@@ -5,7 +5,13 @@
     <div class="container py-5">
         <div class="row">
             <div class="col">
-                <h1 class="fs-1">{{ title }}</h1>
+                <h1 class="fs-1 d-flex">
+                    {{ title }}
+                    <span class="ms-auto" style="cursor: pointer;" id="star-unstar" onclick="toggleStar()">
+                        <i class="fa-regular fa-star d-none"></i>
+                        <i class="fa-solid fa-star d-none"></i>
+                    </span>
+                </h1>
                 <hr/>
             </div>
         </div>
@@ -13,7 +19,7 @@
         <div class="row">
             <div class="col me-1">
                 <h2>Profile</h2>
-                <table class="table table-borderless">
+                <table class="table table-light table-borderless">
                     <tr>
                         <th>Name</th>
                         <td>{{ player.name }}</td>
@@ -66,7 +72,7 @@
                 {% if not standings or standings|length == 0 %}
                 <p>-</p>
                 {% else %}
-                <table class="table table-borderless">
+                <table class="table table-light table-borderless">
                     <tbody>
                     <tr>
                         <th>Category</th>
@@ -197,4 +203,49 @@
         </div>
     </div>
 </div>
+
+<script>
+    const player = {
+        "name": "{{ player.name }}",
+        "id": {{ player.id }}
+    };
+
+    function getStarredPlayers() {
+        const starredPlayers = localStorage.getItem("starredPlayers");
+
+        if (starredPlayers) {
+            return JSON.parse(starredPlayers);
+        }
+        return [];
+    }
+
+    function isStarred() {
+        const starredPlayers = getStarredPlayers();
+        return starredPlayers.some(p => p.id === player.id);
+    }
+
+    function toggleStar() {
+        let starredPlayers = getStarredPlayers();
+
+        if (isStarred()) {
+            const index = starredPlayers.findIndex(p => p.id === player.id);
+            starredPlayers.splice(index, 1);
+        } else {
+            starredPlayers.push(player);
+        }
+
+        localStorage.setItem("starredPlayers", JSON.stringify(starredPlayers));
+
+        const star = document.getElementById("star-unstar");
+        star.querySelector("i.fa-regular").classList.toggle("d-none");
+        star.querySelector("i.fa-solid").classList.toggle("d-none");
+    }
+
+    const star = document.getElementById("star-unstar");
+    if (isStarred()) {
+        star.querySelector("i.fa-solid").classList.remove("d-none");
+    } else {
+        star.querySelector("i.fa-regular").classList.remove("d-none");
+    }
+</script>
 {% endblock %}

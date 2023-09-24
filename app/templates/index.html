@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
   <title>🏸 Badminton Player Explorer</title>
 </head>
 <body>
@@ -15,10 +17,49 @@
       <form class="d-flex">
         <input class="form-control form-control-lg me-2" type="search" placeholder="Find a player by name" />
       </form>
+
+      <div id="starred-players"></div>
     </div>
   </div>
 </div>
 
+<script>
+  function getStarredPlayers() {
+    const starredPlayers = localStorage.getItem('starredPlayers');
+    if (starredPlayers) {
+      return JSON.parse(starredPlayers);
+    }
+    return [];
+  }
+
+  const starredPlayers = getStarredPlayers();
+  console.log(starredPlayers)
+  const starredPlayersContainer = document.querySelector('#starred-players');
+  if (starredPlayers.length > 0) {
+    const list = document.createElement('ul');
+    list.classList.add('list-group');
+
+    starredPlayers.forEach((player) => {
+      const listItem = document.createElement('li');
+      listItem.classList.add('list-group-item');
+
+      const link = document.createElement('a');
+      link.classList.add('text-decoration-none');
+      link.href = `/player/${player.id}`;
+      link.textContent = player.name;
+
+      listItem.appendChild(link);
+      list.appendChild(listItem);
+    });
+
+    const header = document.createElement('h4');
+    header.textContent = '⭐ Following';
+    header.classList.add('mt-5');
+
+    starredPlayersContainer.appendChild(header);
+    starredPlayersContainer.appendChild(list);
+  }
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.min.js"></script>
 <script>

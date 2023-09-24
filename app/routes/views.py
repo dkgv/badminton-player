@@ -1,6 +1,7 @@
-from app.services import player_service
 from flask import current_app as app
 from flask import render_template, request
+
+from app.services import player_service
 
 
 @app.route("/", methods=["GET"])
