@@ -1,11 +1,11 @@
 import os
 from datetime import datetime, timedelta
-from difflib import SequenceMatcher
 from threading import Thread
 from typing import List, Optional
 
 import supabase
 from postgrest.exceptions import APIError
+from pyjarowinkler import distance
 
 from app.badminton_player import api
 from app.badminton_player.models import Match, Player, PlayerMeta, Standing
@@ -46,8 +46,15 @@ def search_player(name: str, club: str = None) -> List[Player]:
 
         _upsert_player_async(p)
 
+    query = name.lower().replace(" ", "")
+
     players.sort(
-        key=lambda p: SequenceMatcher(None, p.name.lower(), name.lower()).ratio(),
+        key=lambda p: distance.get_jaro_distance(
+            p.name.lower().replace(" ", ""),
+            query,
+            winkler=True,
+            scaling=0.2,
+        ),
         reverse=True,
     )
 
