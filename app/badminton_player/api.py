@@ -34,8 +34,8 @@ class Client:
         self.base_url = "https://www.badmintonplayer.dk"
 
     def _get_context_key(self) -> str:
-        one_day = 24 * 60 * 60
-        ttl_hash = round(time.time() / one_day)
+        one_hour = 4 * 60 * 60
+        ttl_hash = round(time.time() / one_hour)
         return self._extract_context_key(ttl_hash)
 
     @lru_cache(maxsize=1)
