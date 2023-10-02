@@ -60,9 +60,9 @@ class Game:
     date: datetime
     category: str
     sets: List[Set]
-    home_player1: str
+    home_player1: Optional[str]
     home_player2: Optional[str]
-    away_player1: str
+    away_player1: Optional[str]
     away_player2: Optional[str]
 
     def contains(self, player_name: str) -> bool:
@@ -74,10 +74,21 @@ class Game:
         ]
 
     def get_winner(self) -> str:
-        if not self.home_player1 and not self.home_player2:
+        mod = lambda x: x if x and "Ikke fremmødt" not in x else None
+        home1, home2 = mod(self.home_player1), mod(self.home_player2)
+        away1, away2 = mod(self.away_player1), mod(self.away_player2)
+        if not home1 and not home2:
+            # home did not show up
             return "away"
-        if not self.away_player1 and not self.away_player2:
+        if not away1 and not away2:
+            # away did not show up
             return "home"
+        if home1 and home2 and ((away1 and not away2) or (away2 and not away1)):
+            # away missing a player
+            return "home"
+        if away1 and away2 and ((home1 and not home2) or (home2 and not home1)):
+            # home missing a player
+            return "away"
         home = sum([1 for s in self.sets if s.home_points > s.away_points])
         away = sum([1 for s in self.sets if s.home_points < s.away_points])
         return "home" if home > away else "away"
@@ -156,8 +167,11 @@ class Match:
             return player_name in players
 
         winner = self.get_winner()
-        return player_name in home_players if winner == "home" else player_name in away_players
-
+        return (
+            player_name in home_players
+            if winner == "home"
+            else player_name in away_players
+        )
 
 
 @dataclass
