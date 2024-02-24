@@ -142,7 +142,14 @@ class Match:
     location: str
 
     def get_winner(self) -> str:
-        return "home" if self.home_team_points > self.away_team_points else "away"
+        home_score, away_score = 0, 0
+        for g in self.games:
+            winner = g.get_winner()
+            if winner == "home":
+                home_score += 1
+            else:
+                away_score += 1
+        return "home" if home_score > away_score else "away"
 
     def is_tie(self) -> bool:
         return self.home_team_points == self.away_team_points
@@ -195,9 +202,11 @@ class Player:
             "bp_id": self.id,
             "bp_name": self.name,
             "bp_club_id": self.club_id,
-            "birthdate": self.birth_date.isoformat()
-            if self.birth_date
-            else "1970-01-01T00:00:00+00:00",
+            "birthdate": (
+                self.birth_date.isoformat()
+                if self.birth_date
+                else "1970-01-01T00:00:00+00:00"
+            ),
         }
 
     @staticmethod
