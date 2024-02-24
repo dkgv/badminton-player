@@ -17,7 +17,7 @@
         </div>
 
         <div class="row">
-            <div class="col me-1">
+            <div class="col-xs-12 col-sm-12 col-md-5">
                 <h2>Profile</h2>
                 <table class="table table-light table-borderless">
                     <tr>
@@ -49,25 +49,9 @@
                             {% endif %}
                         </td>
                     </tr>
-                    <tr>
-                        <th>Streak</th>
-                        <td>
-                            {% if games|length > 0 %}
-                            {% for game in games %}
-                            {% if game.won_by(player.name) %}
-                            <span class="badge bg-success">W</span>
-                            {% else %}
-                            <span class="badge bg-danger">L</span>
-                            {% endif %}
-                            {% endfor %}
-                            {% else %}
-                            -
-                            {% endif %}
-                        </td>
-                    </tr>
                 </table>
             </div>
-            <div class="col ms-1">
+            <div class="col-xs-12 col-sm-12 col-md-7">
                 <h2>Ranks</h2>
                 {% if not standings or standings|length == 0 %}
                 <p>-</p>
@@ -76,24 +60,34 @@
                     <tbody>
                     <tr>
                         <th>Category</th>
-                        <th>Matches</th>
-                        <th>Points</th>
-                        <th>Ranking</th>
-                        <th>Tier</th>
+                        <th class="text-center">Matches</th>
+                        <th>Streak</th>
+                        <th class="text-center">Points</th>
+                        <th class="text-center">Ranking</th>
+                        <th class="text-center">Tier</th>
                     </tr>
                     {% for s in standings %}
                     <tr>
                         <td>{{ s.category }}</td>
-                        <td>{{ s.num_matches }}</td>
-                        <td>{{ s.num_points }}</td>
+                        <td class="text-center">{{ s.num_matches }}</td>
                         <td>
+                            {% for game in streak[s.category] %}
+                                {% if game.won_by(player.name) %}
+                                    <span class="badge bg-success">W</span>
+                                {% else %}
+                                    <span class="badge bg-danger">L</span>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td class="text-center">{{ s.num_points }}</td>
+                        <td class="text-center">
                             {% if s.ranking != -1 %}
                             {{ s.ranking }}
                             {% else %}
                             -
                             {% endif %}
                         </td>
-                        <td>{{ s.tier }}</td>
+                        <td class="text-center">{{ s.tier }}</td>
                     </tr>
                     {% endfor %}
                     </tbody>

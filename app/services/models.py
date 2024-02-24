@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import Dict, List
 
 from app.badminton_player.models import Game, Match, Player, PlayerMeta, Standing
 

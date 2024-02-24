@@ -1,14 +1,15 @@
 import os
+from collections import defaultdict
 from datetime import datetime, timedelta
 from threading import Thread
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import supabase
 from postgrest.exceptions import APIError
 from pyjarowinkler import distance
 
 from app.badminton_player import api
-from app.badminton_player.models import Match, Player, PlayerMeta, Standing
+from app.badminton_player.models import Game, Match, Player, PlayerMeta, Standing
 from app.services.models import PlayerProfile
 from app.utils import supabase_utils
 
@@ -97,6 +98,33 @@ def get_player_profile(player_id: int) -> Optional[PlayerProfile]:
         matches=matches,
         standings=standings,
     )
+
+
+def group_games_by_category(games: List[Game]) -> Dict[str, List[Game]]:
+    streak = defaultdict(list)
+    for game in games:
+        category = game.category
+        if category != "MD":
+            category = category[2:].strip()
+        streak[category].append(game)
+
+    if "D" in streak:
+        if "HD" in streak:
+            streak["HD"].extend(streak["D"])
+        else:
+            streak["DD"].extend(streak["D"])
+
+        del streak["D"]
+
+    mapping = {
+        "HS": "Rangliste Single",
+        "DS": "Rangliste Single",
+        "MD": "Rangliste Mix",
+        "HD": "Rangliste Double",
+        "DD": "Rangliste Double",
+    }
+
+    return {mapping[k]: v for k, v in streak.items() if k in mapping}
 
 
 def _try_find_standings(player_id: int) -> Optional[List[Standing]]:

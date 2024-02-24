@@ -19,6 +19,7 @@ def player(player_id: int):
         "player.html",
         profile=profile.metadata,
         games=profile.games,
+        streak=player_service.group_games_by_category(profile.games),
         player=profile.player,
         matches=profile.matches,
         standings=profile.standings,
