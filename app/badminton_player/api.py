@@ -11,9 +11,9 @@ recommendation: leave
 import re
 import time
 from datetime import datetime
-from functools import lru_cache
 from typing import Dict, List
 
+import cachetools.func
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
@@ -38,8 +38,8 @@ class Client:
         ttl_hash = round(time.time() / one_hour)
         return self._extract_context_key(ttl_hash)
 
-    @lru_cache(maxsize=1)
-    def _extract_context_key(self, timestamp) -> str:
+    @cachetools.func.ttl_cache(ttl=3600)
+    def _extract_context_key(self, ttl_hash: int) -> str:
         r = requests.get(self.base_url)
         soup = BeautifulSoup(r.text, features="lxml")
         scripts = soup.find_all("script")
@@ -163,7 +163,7 @@ class Client:
 
         return players
 
-    @lru_cache(maxsize=10)
+    @cachetools.func.ttl_cache(ttl=3600)
     def get_profile(self, player_id: int) -> PlayerMeta | None:
         headers = {
             "authority": "badmintonplayer.dk",
@@ -286,9 +286,11 @@ class Client:
                 matches = matches.apply(
                     lambda x: MatchMeta(
                         id=int(x["Kampdato_html"].split(",")[-2]),
-                        date=datetime.strptime(x["Kampdato"], "%d-%m-%Y %H:%M:%S")
-                        if x["Kampdato"].strip()
-                        else None,
+                        date=(
+                            datetime.strptime(x["Kampdato"], "%d-%m-%Y %H:%M:%S")
+                            if x["Kampdato"].strip()
+                            else None
+                        ),
                         group=x["Række"],
                         home_team=x["Hold"],
                         away_team=x["Modstander"],
