@@ -138,14 +138,21 @@ def _try_find_standings(player_id: int) -> Optional[List[Standing]]:
         Standing,
     )
     if standings:
+        print(f"Found existing standings for player with id {player_id}")
         return standings
 
+    print(f"Retrieving standings for player with id {player_id}")
     profile = badminton_player_client.get_profile(player_id)
     if not profile or not profile.standings.any():
         return None
 
-    supabase_client.from_("standings").insert(
-        [s.to_dict(player_id) for s in profile.standings]
+    standings_data = [s.to_dict(player_id) for s in profile.standings]
+    for standing in standings_data:
+        standing["updated_at"] = "now()"
+
+    supabase_client.from_("standings").upsert(
+        standings_data,
+        on_conflict="bp_player_id,category",
     ).execute()
 
     return list(profile.standings)
