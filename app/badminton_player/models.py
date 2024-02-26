@@ -135,24 +135,20 @@ class Match:
     date: datetime
     group: str
     home_team: str
-    home_team_points: int
     away_team: str
-    away_team_points: int
     games: List[Game]
     location: str
 
-    def get_winner(self) -> str:
-        home_score, away_score = 0, 0
-        for g in self.games:
-            winner = g.get_winner()
-            if winner == "home":
-                home_score += 1
-            else:
-                away_score += 1
-        return "home" if home_score > away_score else "away"
+    @property
+    def home_points(self) -> int:
+        return sum([1 for g in self.games if g.get_winner() == "home"])
 
-    def is_tie(self) -> bool:
-        return self.home_team_points == self.away_team_points
+    @property
+    def away_points(self) -> int:
+        return sum([1 for g in self.games if g.get_winner() == "away"])
+
+    def get_winner(self) -> str:
+        return "home" if self.home_points > self.away_points else "away"
 
     def on_winning_team(self, player_name: str) -> bool:
         home_players = []

@@ -415,8 +415,6 @@ class Client:
             location=details["Spillested"],
             date=date,
             home_team=overall_result.find_all("td")[0].text.strip(),
-            home_team_points=overall_result.find_all("td")[1].text.strip(),
-            away_team_points=overall_result.find_all("td")[3].text.strip(),
             away_team=overall_result.find_all("td")[4].text.strip(),
             games=games,
         )
