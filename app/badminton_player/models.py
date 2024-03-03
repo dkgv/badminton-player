@@ -38,11 +38,13 @@ class Standing:
 
 @dataclass
 class Set:
+    number: int
     home_points: int
     away_points: int
 
     def to_dict(self) -> dict:
         return {
+            "number": self.number,
             "home_points": self.home_points,
             "away_points": self.away_points,
         }
@@ -66,12 +68,26 @@ class Game:
     away_player2: Optional[str]
 
     def contains(self, player_name: str) -> bool:
-        return player_name in [
-            self.home_player1,
-            self.home_player2,
-            self.away_player1,
-            self.away_player2,
-        ]
+        return player_name in self.players()
+
+    def home_players(self) -> List[str]:
+        home_players = []
+        if self.home_player1:
+            home_players.append(self.home_player1)
+        if self.home_player2:
+            home_players.append(self.home_player2)
+        return home_players
+
+    def away_players(self) -> List[str]:
+        away_players = []
+        if self.away_player1:
+            away_players.append(self.away_player1)
+        if self.away_player2:
+            away_players.append(self.away_player2)
+        return away_players
+
+    def players(self) -> List[str]:
+        return self.home_players() + self.away_players()
 
     def get_winner(self) -> str:
         mod = lambda x: x if x and "Ikke fremmødt" not in x else None
@@ -101,6 +117,7 @@ class Game:
 
     def to_dict(self) -> dict:
         return {
+            "date": self.date.strftime("%Y-%m-%dT%H:%M:%S%z"),
             "category": self.category,
             "sets": [s.to_dict() for s in self.sets],
             "home_player1": self.home_player1,
@@ -108,6 +125,28 @@ class Game:
             "away_player1": self.away_player1,
             "away_player2": self.away_player2,
         }
+
+    @staticmethod
+    def from_json(d: dict) -> "Game":
+        sets = []
+        for s in d["sets"]:
+            sets.append(
+                Set(
+                    number=s["number"],
+                    home_points=s["home_points"],
+                    away_points=s["away_points"],
+                )
+            )
+
+        return Game(
+            category=d["category"],
+            date=datetime.strptime(d["date"], "%Y-%m-%dT%H:%M:%S%z"),
+            sets=sets,
+            home_player1=d["home_player1"] if "home_player1" in d else None,
+            home_player2=d["home_player2"] if "home_player2" in d else None,
+            away_player1=d["away_player1"] if "away_player1" in d else None,
+            away_player2=d["away_player2"] if "away_player2" in d else None,
+        )
 
 
 @dataclass
@@ -137,7 +176,6 @@ class Match:
     home_team: str
     away_team: str
     games: List[Game]
-    location: str
 
     @property
     def home_points(self) -> int:

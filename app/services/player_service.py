@@ -210,9 +210,31 @@ def _try_find_matches(player_id: int) -> Optional[List[Match]]:
         if not meta:
             continue
 
-        match = badminton_player_client.get_match(meta.id)
-        if not match:
-            continue
+        games = supabase_utils.from_resp(
+            supabase_client.from_("games")
+            .select("*")
+            .eq("bp_match_id", meta.id)
+            .execute(),
+            Game,
+        )
+        if games:
+            print("Found existing games for match with id", meta.id)
+            match = Match(
+                id=meta.id,
+                date=meta.date,
+                group=meta.group,
+                home_team=meta.home_team,
+                away_team=meta.away_team,
+                games=games,
+            )
+        else:
+            print("Retrieving games for match with id", meta.id)
+            match = badminton_player_client.get_match(meta.id)
+            if not match:
+                continue
+
+            for game in match.games:
+                _upsert_game_async(meta.id, game)
 
         sort_for_match[match.id] = meta.sort
         matches.append(match)
@@ -220,6 +242,16 @@ def _try_find_matches(player_id: int) -> Optional[List[Match]]:
     matches.sort(key=lambda m: sort_for_match[m.id], reverse=True)
 
     return matches
+
+
+def _upsert_game_async(match_id: str, game: Game) -> None:
+    def _upsert_game_job():
+        row = game.to_dict()
+        row["bp_match_id"] = match_id
+        supabase_client.from_("games").upsert(row).execute()
+
+    t = Thread(target=_upsert_game_job)
+    t.start()
 
 
 def _try_find_games(player_name: str, matches: List[Match]):
@@ -232,6 +264,8 @@ def _try_find_games(player_name: str, matches: List[Match]):
             if game and game.date and game.contains(player_name):
                 games.append(game)
 
-    games.sort(key=lambda g: g.date if g.date is not None else 0, reverse=True)
+    games.sort(
+        key=lambda g: g.date.timestamp() if g.date is not None else 0, reverse=True
+    )
 
     return games

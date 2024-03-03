@@ -345,6 +345,7 @@ class Client:
             return details
 
         details = get_details(tables[0])
+        print("Match details", details)
         date = (
             datetime.strptime(details["Tid"], "%a %d-%m-%Y %H:%M")
             if details["Tid"]
@@ -387,6 +388,7 @@ class Client:
                     if cell.text.strip():
                         home_points, away_points = cell.text.split("-")
                         set_ = Set(
+                            number=len(sets) + 1,
                             home_points=int(home_points.strip()),
                             away_points=int(away_points.strip()),
                         )
@@ -412,7 +414,6 @@ class Client:
         return Match(
             id=int(details["Kampnr"]),
             group=details["Række"],
-            location=details["Spillested"],
             date=date,
             home_team=overall_result.find_all("td")[0].text.strip(),
             away_team=overall_result.find_all("td")[4].text.strip(),
