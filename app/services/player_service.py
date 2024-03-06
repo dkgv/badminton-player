@@ -206,7 +206,7 @@ def _try_find_matches(player_id: int) -> Optional[List[Match]]:
 
     matches = []
     sort_for_match = {}
-    for meta in profile.match_metadata:
+    for i, meta in enumerate(profile.match_metadata):
         if not meta:
             continue
 
@@ -218,6 +218,24 @@ def _try_find_matches(player_id: int) -> Optional[List[Match]]:
             Game,
         )
         if games:
+            # Order: 1. MD, 2. MD, 1. DS, 2. DS, 1. HS, 2. HS, 3. HS, 4. HS, 1. DD, 2. DD
+            # Sort by type (last two chars): MD, DS, HS, DD
+            # Sort by number (first char): 1, 2, 3, 4
+            order = {
+                "MD": 0,
+                "DS": 1,
+                "HS": 2,
+                "DD": 3,
+                "HD": 4,
+                "D": 5,
+            }
+            games.sort(
+                key=lambda g: (
+                    order[g.category[3:]],
+                    int(g.category.strip()[0]),
+                )
+            )
+
             print("Found existing games for match with id", meta.id)
             match = Match(
                 id=meta.id,
@@ -227,6 +245,8 @@ def _try_find_matches(player_id: int) -> Optional[List[Match]]:
                 away_team=meta.away_team,
                 games=games,
             )
+
+            sort_for_match[match.id] = i
         else:
             print("Retrieving games for match with id", meta.id)
             match = badminton_player_client.get_match(meta.id)
@@ -236,7 +256,8 @@ def _try_find_matches(player_id: int) -> Optional[List[Match]]:
             for game in match.games:
                 _upsert_game_async(meta.id, game)
 
-        sort_for_match[match.id] = meta.sort
+            sort_for_match[match.id] = meta.sort
+
         matches.append(match)
 
     matches.sort(key=lambda m: sort_for_match[m.id], reverse=True)
