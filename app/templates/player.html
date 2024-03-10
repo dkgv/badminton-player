@@ -1,4 +1,7 @@
 {% set title = "🏸 " ~ player.name %}
+{% set user_agent = request.headers.get('User-Agent', '').lower() %}
+{% set is_mobile = 'mobi' in user_agent or 'android' in user_agent or 'iphone' in user_agent %}
+
 {% extends "base.html" %}
 {% block content %}
 <div class="bg-light">
@@ -60,26 +63,44 @@
                         <tbody>
                         <tr>
                             <th>Category</th>
+                            <th>Level</th>
+                            <th class="text-center">Points</th>
                             <th class="text-center">Matches</th>
                             <th>Streak</th>
-                            <th class="text-center">Points</th>
-                            <th class="text-center">Ranking</th>
-                            <th class="text-center">Tier</th>
+                            {% if not is_mobile %}
+                            <th class="text-center">Rank</th>
+                            {% endif %}
                         </tr>
                         {% for s in standings %}
                         <tr>
-                            <td>{{ s.category }}</td>
+                            <td>{{ s.category[10:] }} </td>
+                            <td>{{ s.tier }}</td>
+                            <td class="text-center">{{ s.num_points }}</td>
                             <td class="text-center">{{ s.num_matches }}</td>
                             <td>
-                                {% for game in streak[s.category] %}
+
+                                {% set limit = 1000 %}
+                                {% if is_mobile %}
+                                    {% set limit = 3 %}
+                                {% endif %}
+                                
+                                {% set games = streak[s.category] %}
+                                {% if games|length > limit %}
+                                    {% set games = games[:limit] %}
+                                {% endif %}
+
+                                {% for game in games %}
                                     {% if game.won_by(player.name) %}
                                         <span class="badge bg-success">W</span>
                                     {% else %}
                                         <span class="badge bg-danger">L</span>
                                     {% endif %}
                                 {% endfor %}
+                                {% if s.category not in streak or streak[s.category]|length == 0 %}
+                                    -
+                                {% endif %}
                             </td>
-                            <td class="text-center">{{ s.num_points }}</td>
+                            {% if not is_mobile %}
                             <td class="text-center">
                                 {% if s.ranking != -1 %}
                                 {{ s.ranking }}
@@ -87,7 +108,7 @@
                                 -
                                 {% endif %}
                             </td>
-                            <td class="text-center">{{ s.tier }}</td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                         </tbody>
