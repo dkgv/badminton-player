@@ -1,23 +1,35 @@
-import os
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from threading import Thread
 from typing import Dict, List, Optional
 
-import supabase
-from postgrest.exceptions import APIError
 from pyjarowinkler import distance
 
-from app.badminton_player import api
 from app.badminton_player.models import Game, Match, Player, PlayerMeta, Standing
-from app.services.models import PlayerProfile
+from app.services import badminton_player_client, supabase_client
 from app.utils import supabase_utils
 
-badminton_player_client = api.Client()
-supabase_client = supabase.create_client(
-    supabase_url=os.getenv("SUPABASE_URL"),
-    supabase_key=os.getenv("SUPABASE_KEY"),
-)
+
+@dataclass
+class PlayerProfile:
+    metadata: PlayerMeta
+    player: Player
+    games: List[Game]
+    matches: List[Match]
+    standings: List[Standing]
+
+
+def get_players_for_club(club_id: int) -> List[Player]:
+    players = supabase_utils.from_resp(
+        supabase_client.from_("players")
+        .select("*")
+        .eq("bp_club_id", club_id)
+        .order("bp_name")
+        .execute(),
+        Player,
+    )
+    return players
 
 
 def search_player(name: str, club: str = None) -> List[Player]:

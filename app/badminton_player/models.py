@@ -248,7 +248,7 @@ class Player:
         return Player(
             id=d["bp_id"],
             name=d["bp_name"],
-            club_name=d["clubs"]["name"],
+            club_name=d["clubs"]["name"] if "clubs" in d else "",
             club_id=d["bp_club_id"],
             birth_date=datetime.strptime(d["birthdate"], "%Y-%m-%dT%H:%M:%S%z"),
         )

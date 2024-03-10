@@ -1,78 +1,85 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
 
-  <title>🏸 Badminton Player Explorer</title>
-</head>
-<body>
+        <title>🏸 Badminton Player Explorer</title>
+    </head>
+    <body>
+        <div class="container">
+            <div class="row">
+                <div class="col py-5 my-5">
+                    <h1>🏸 Badminton Player Explorer</h1>
+                    <form class="d-flex">
+                        <input
+                            class="form-control form-control-lg me-2"
+                            type="search"
+                            placeholder="Find a player or club by name"
+                            autofocus
+                        />
+                    </form>
 
-<div class="container">
-  <div class="row">
-    <div class="col py-5 my-5">
-      <h1>🏸 Badminton Player Explorer</h1>
-      <form class="d-flex">
-        <input class="form-control form-control-lg me-2" type="search" placeholder="Find a player by name" autofocus />
-      </form>
+                    <div id="starred-players"></div>
+                </div>
+            </div>
+        </div>
 
-      <div id="starred-players"></div>
-    </div>
-  </div>
-</div>
+        <script>
+            function getStarredPlayers() {
+                const starredPlayers = localStorage.getItem("starredPlayers");
+                if (starredPlayers) {
+                    return JSON.parse(starredPlayers);
+                }
+                return [];
+            }
 
-<script>
-  function getStarredPlayers() {
-    const starredPlayers = localStorage.getItem('starredPlayers');
-    if (starredPlayers) {
-      return JSON.parse(starredPlayers);
-    }
-    return [];
-  }
+            const starredPlayers = getStarredPlayers();
+            console.log(starredPlayers);
+            const starredPlayersContainer =
+                document.querySelector("#starred-players");
+            if (starredPlayers.length > 0) {
+                const list = document.createElement("ul");
+                list.classList.add("list-group");
 
-  const starredPlayers = getStarredPlayers();
-  console.log(starredPlayers)
-  const starredPlayersContainer = document.querySelector('#starred-players');
-  if (starredPlayers.length > 0) {
-    const list = document.createElement('ul');
-    list.classList.add('list-group');
+                starredPlayers.forEach((player) => {
+                    const listItem = document.createElement("li");
+                    listItem.classList.add("list-group-item");
 
-    starredPlayers.forEach((player) => {
-      const listItem = document.createElement('li');
-      listItem.classList.add('list-group-item');
+                    const link = document.createElement("a");
+                    link.classList.add("text-decoration-none");
+                    link.href = `/player/${player.id}`;
+                    link.textContent = player.name;
 
-      const link = document.createElement('a');
-      link.classList.add('text-decoration-none');
-      link.href = `/player/${player.id}`;
-      link.textContent = player.name;
+                    listItem.appendChild(link);
+                    list.appendChild(listItem);
+                });
 
-      listItem.appendChild(link);
-      list.appendChild(listItem);
-    });
+                const header = document.createElement("h4");
+                header.textContent = "⭐ Following";
+                header.classList.add("mt-5");
 
-    const header = document.createElement('h4');
-    header.textContent = '⭐ Following';
-    header.classList.add('mt-5');
+                starredPlayersContainer.appendChild(header);
+                starredPlayersContainer.appendChild(list);
+            }
+        </script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.min.js"></script>
+        <script>
+            const form = document.querySelector("form");
 
-    starredPlayersContainer.appendChild(header);
-    starredPlayersContainer.appendChild(list);
-  }
-</script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.min.js"></script>
-<script>
-  const form = document.querySelector('form');
-
-  form.addEventListener('submit', (event) => {
-    event.preventDefault(); // prevent default form submission behavior
-    const input = form.querySelector('input');
-    const searchQuery = input.value;
-    const url = `/search?q=${searchQuery}`;
-    window.location.href = url; // redirect to the search page with the search query
-  });
-</script>
-
-</body>
+            form.addEventListener("submit", (event) => {
+                event.preventDefault(); // prevent default form submission behavior
+                const input = form.querySelector("input");
+                const searchQuery = input.value;
+                const url = `/search?q=${searchQuery}`;
+                window.location.href = url; // redirect to the search page with the search query
+            });
+        </script>
+    </body>
 </html>

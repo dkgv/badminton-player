@@ -1,32 +1,98 @@
-{% set title = "🏸 Find spiller: \"" ~ query ~ "\"" %}
-{% set color = "bg-light" %}
-{% extends "base.html" %}
-{% block content %}
+{% set title = "🏸 Find spiller: \"" ~ query ~ "\"" %} {% set color = "bg-light"%} {% extends "base.html" %} {% block content %}
 <div class="container py-3">
     <div class="row">
         <div class="col">
-            {% if not players %}
-            <h1 class="mb-4">No players found for "{{ query }}" :(</h1>
+            {% if not players and not clubs %}
+            <h1 class="mb-4">No results found for "{{ query }}" :(</h1>
 
-            <p class="text-muted">
-                Try searching for first name only.
-            </p>
+            <p class="text-muted">Try searching for first name only.</p>
             {% else %}
-            <h1 class="mb-4">📋 {{ players|length }} results for "{{ query }}"</h1>
+            <h1 class="mb-4">
+                📋 {{ players|length + clubs|length }} results for "{{ query }}"
+            </h1>
 
             {% set placeholder = "Filter \"" ~ query ~ "\" results" %}
-            <input class="form-control" id="filter-input" type="text" placeholder="{{ placeholder }}" onkeydown="if (event.key === 'Enter') filterResults()" autofocus>
+            <input
+                class="form-control mb-3"
+                id="filter-input"
+                type="text"
+                placeholder="{{ placeholder }}"
+                onkeydown="if (event.key === 'Enter') filterResults()"
+                autofocus
+            />
 
-            <div class="table-responsive">
-                <table id="player-table" class="table table-borderless">
-                    <thead class="thead-light">
-                    <tr>
-                        <th class="col-6">Name</th>
-                        <th class="col-6">Club</th>
-                    </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button
+                        class='nav-link {{ "active" if players|length > 0 else "" }}'
+                        data-bs-toggle="tab"
+                        data-bs-target="#players"
+                        type="button"
+                        role="tab"
+                    >
+                        🏃 Players
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <button
+                        class='nav-link {{ "active" if players|length == 0 and clubs|length > 0 else "" }}'
+                        data-bs-toggle="tab"
+                        data-bs-target="#clubs"
+                        type="button"
+                        role="tab"
+                    >
+                        🏟️ Clubs
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <div
+                    class='tab-pane fade {{ "show active" if players|length > 0 else "" }}'
+                    id="players"
+                    role="tabpanel"
+                >
+                    {% if players|length == 0 %}
+                    <p class="text-muted mt-3">
+                        No matching players found :&lpar;
+                    </p>
+                    {% endif %}
+                    <div class="table-responsive">
+                        <table id="player-table" class="table table-borderless">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th class="col-6"></th>
+                                    <th class="col-6"></th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div
+                    class='tab-pane fade {{ "show active" if players|length == 0 and clubs|length > 0 else "" }}'
+                    id="clubs"
+                    role="tabpanel"
+                >
+                    {% if clubs|length == 0 %}
+                    <p class="text-muted mt-3">
+                        No matching clubs found :&lpar;
+                    </p>
+                    {% endif %}
+                    <div class="table-responsive">
+                        <table id="club-table" class="table table-borderless">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th class="col-6"></th>
+                                    <th class="col-6"></th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
             {% endif %}
         </div>
@@ -34,61 +100,90 @@
 </div>
 
 <script>
-    const table = document.getElementById('player-table');
-    const players = JSON.parse('{{ players|tojson }}');
+    const tables = {
+        "player-table": {
+            "dataset": JSON.parse('{{ players|tojson }}'), // prettier-ignore
+            filter: (query, dataset) =>
+                dataset.filter(
+                    ({ name, club_name }) =>
+                        name.toUpperCase().includes(query.toUpperCase()) ||
+                        club_name.toUpperCase().includes(query.toUpperCase())
+                ),
+            rowFactory: (row, player) => {
+                const nameTd = document.createElement("td");
+                const nameLink = document.createElement("a");
+                nameLink.classList.add("text-decoration-none");
+                nameLink.href = "/player/" + player.id;
+                nameLink.textContent = player.name;
+                nameTd.appendChild(nameLink);
+                row.appendChild(nameTd);
 
-    const ths = table.querySelectorAll('th');
-    ths.forEach((th, i) => {
-        th.addEventListener('click', () => {
-            sortTable(i);
+                const clubTd = document.createElement("td");
+                clubTd.textContent = player.club_name;
+                row.appendChild(clubTd);
+            },
+        },
+        "club-table": {
+            "dataset": JSON.parse('{{ clubs|tojson }}'), // prettier-ignore
+            filter: (query, dataset) =>
+                dataset.filter(({ name }) =>
+                    name.toUpperCase().includes(query.toUpperCase())
+                ),
+            rowFactory: (row, club) => {
+                const nameTd = document.createElement("td");
+                const nameLink = document.createElement("a");
+                nameLink.classList.add("text-decoration-none");
+                nameLink.href = "/club/" + club.id;
+                nameLink.textContent = club.name;
+                nameTd.appendChild(nameLink);
+                row.appendChild(nameTd);
+
+                const locationTd = document.createElement("td");
+                locationTd.textContent = club.location;
+                row.appendChild(locationTd);
+            },
+        },
+    };
+
+    for (const id of Object.keys(tables)) {
+        const table = document.getElementById(id);
+
+        const ths = table.querySelectorAll("th");
+        ths.forEach((th, i) => {
+            th.addEventListener("click", () => {
+                sortTable(i);
+            });
         });
-    });
 
-    const filterInput = document.getElementById('filter-input');
-    filterInput.addEventListener('keyup', () => {
-        filterTable(filterInput.value);
-    });
+        function renderTable(filteredResults) {
+            const tbody = table.querySelector("tbody");
 
-    function renderTable(filteredPlayers) {
-        const tbody = table.querySelector('tbody');
+            // Clear all rows
+            const rows = tbody.querySelectorAll("tr");
+            rows.forEach((row) => {
+                tbody.removeChild(row);
+            });
 
-        // clear all rows
-        const rows = tbody.querySelectorAll('tr');
-        rows.forEach((row) => {
-            tbody.removeChild(row);
+            filteredResults.forEach((result) => {
+                const tr = document.createElement("tr");
+                tables[id].rowFactory(tr, result);
+                tbody.appendChild(tr);
+            });
+        }
+
+        const filterInput = document.getElementById("filter-input");
+        filterInput.addEventListener("keyup", () => {
+            const query = filterInput.value;
+            const filteredResults = tables[id].filter(
+                query,
+                tables[id].dataset
+            );
+            renderTable(filteredResults);
         });
 
-        filteredPlayers.forEach((player) => {
-            const tr = document.createElement('tr');
-
-            const nameTd = document.createElement('td');
-            const nameLink = document.createElement('a');
-            nameLink.classList.add('text-decoration-none');
-            nameLink.href = '/player/' + player.id;
-            nameLink.textContent = player.name;
-            nameTd.appendChild(nameLink);
-            tr.appendChild(nameTd);
-
-            const clubTd = document.createElement('td');
-            clubTd.textContent = player.club_name;
-            tr.appendChild(clubTd);
-
-            tbody.appendChild(tr);
-        });
+        // Initialize table
+        renderTable(tables[id].dataset);
     }
-
-    function filterTable(query) {
-        query = query.toUpperCase();
-        const filteredPlayers = players.filter((player) => {
-            const nameValue = player.name.toUpperCase();
-            const clubValue = player.club_name.toUpperCase();
-            return nameValue.includes(query) || clubValue.includes(query);
-        });
-        renderTable(filteredPlayers);
-    }
-
-    // Initialize table
-    renderTable(players);
 </script>
 
 {% endblock %}
