@@ -1,6 +1,8 @@
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from queue import Queue
 from threading import Thread
 from typing import Dict, List, Optional
 
@@ -110,6 +112,76 @@ def get_player_profile(player_id: int) -> Optional[PlayerProfile]:
         matches=matches,
         standings=standings,
     )
+
+
+def get_player_ids(matches: List[Match]) -> Dict[str, int]:
+    name_to_team = {}
+    q = Queue()
+
+    for match in matches:
+        for game in match.games:
+            for hp in game.home_players():
+                name_to_team[hp] = match.home_team
+
+            for ap in game.away_players():
+                name_to_team[ap] = match.away_team
+
+    for name, team in name_to_team.items():
+        regexp = r"^(.*?)(?:\s\d+)?$"
+        match = re.match(regexp, team)
+        if match:
+            name_to_team[name] = match.group(1)
+
+    for name, club in name_to_team.items():
+        q.put((name, club))
+
+    print()
+    print(name_to_team)
+    print()
+
+    filtered_players = supabase_client.rpc(
+        "get_players_by_name_and_team", {"name_to_team": name_to_team}
+    ).execute()
+
+    nameclub_to_id = {
+        (p["bp_name"], p["club_name"]): p["bp_id"]
+        for p in filtered_players.data
+        if p["bp_id"]
+    }
+
+    def worker():
+        while not q.empty():
+            player_name, club = q.get()
+            if (player_name, club) in nameclub_to_id or "Ikke fremmødt" in player_name:
+                q.task_done()
+                continue
+
+            try:
+                print("Searching for player: ", player_name, club)
+                resp = search_player(player_name, club)
+                if not resp:
+                    q.task_done()
+                    continue
+
+                # print(f"Player query: {player_name} {club} -> {resp}")
+                player = resp[0]
+                if not player or player.name != player_name:
+                    q.task_done()
+                    continue
+
+                nameclub_to_id[(player_name, club)] = player.id
+            except Exception as e:
+                print("Player->ID worker failed:", e)
+
+            q.task_done()
+
+    for _ in range(5):
+        t = Thread(target=worker)
+        t.start()
+
+    q.join()
+
+    return {tuple[0]: id for tuple, id in nameclub_to_id.items()}
 
 
 def group_games_by_category(games: List[Game]) -> Dict[str, List[Game]]:

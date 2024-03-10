@@ -15,14 +15,18 @@ def player(player_id: int):
     if not profile:
         return "Not found", 404
 
+    name_to_ids = player_service.get_player_ids(profile.matches)
+    streak = player_service.group_games_by_category(profile.games)
+
     return render_template(
         "player.html",
         profile=profile.metadata,
         games=profile.games,
-        streak=player_service.group_games_by_category(profile.games),
+        streak=streak,
         player=profile.player,
         matches=profile.matches,
         standings=profile.standings,
+        name_to_ids=name_to_ids,
     )
 
 
