@@ -34,7 +34,6 @@ def club(club_id: int):
 
     players = player_service.get_players_for_club(club_id)
 
-    print(club)
     return render_template("club.html", club=club, players=players)
 
 
@@ -47,6 +46,6 @@ def search():
     players = player_service.search_player(query)
     clubs = club_service.search_club(query)
 
-    print(players, clubs)
+    print(f"Searched for {query}, found {len(players)} players and {len(clubs)} clubs")
 
     return render_template("search.html", players=players, clubs=clubs, query=query)

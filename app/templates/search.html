@@ -1,4 +1,7 @@
-{% set title = "🏸 Find spiller: \"" ~ query ~ "\"" %} {% set color = "bg-light"%} {% extends "base.html" %} {% block content %}
+{% set title = "🏸 Find spiller: \"" ~ query ~ "\"" %}
+{% set color = "bg-light" %}
+{% extends "base.html" %}
+{% block content %}
 <div class="container py-3">
     <div class="row">
         <div class="col">
@@ -100,90 +103,92 @@
 </div>
 
 <script>
-    const tables = {
-        "player-table": {
-            "dataset": JSON.parse('{{ players|tojson }}'), // prettier-ignore
-            filter: (query, dataset) =>
-                dataset.filter(
-                    ({ name, club_name }) =>
-                        name.toUpperCase().includes(query.toUpperCase()) ||
-                        club_name.toUpperCase().includes(query.toUpperCase())
-                ),
-            rowFactory: (row, player) => {
-                const nameTd = document.createElement("td");
-                const nameLink = document.createElement("a");
-                nameLink.classList.add("text-decoration-none");
-                nameLink.href = "/player/" + player.id;
-                nameLink.textContent = player.name;
-                nameTd.appendChild(nameLink);
-                row.appendChild(nameTd);
+    document.addEventListener("DOMContentLoaded", (e) => {
+        const tables = {
+            "player-table": {
+                "dataset": JSON.parse('{{ players|tojson }}'), // prettier-ignore
+                filter: (query, dataset) =>
+                    dataset.filter(
+                        ({ name, club_name }) =>
+                            name.toUpperCase().includes(query.toUpperCase()) ||
+                            club_name.toUpperCase().includes(query.toUpperCase())
+                    ),
+                rowFactory: (row, player) => {
+                    const nameTd = document.createElement("td");
+                    const nameLink = document.createElement("a");
+                    nameLink.classList.add("text-decoration-none");
+                    nameLink.href = "/player/" + player.id;
+                    nameLink.textContent = player.name;
+                    nameTd.appendChild(nameLink);
+                    row.appendChild(nameTd);
 
-                const clubTd = document.createElement("td");
-                clubTd.textContent = player.club_name;
-                row.appendChild(clubTd);
+                    const clubTd = document.createElement("td");
+                    clubTd.textContent = player.club_name;
+                    row.appendChild(clubTd);
+                },
             },
-        },
-        "club-table": {
-            "dataset": JSON.parse('{{ clubs|tojson }}'), // prettier-ignore
-            filter: (query, dataset) =>
-                dataset.filter(({ name }) =>
-                    name.toUpperCase().includes(query.toUpperCase())
-                ),
-            rowFactory: (row, club) => {
-                const nameTd = document.createElement("td");
-                const nameLink = document.createElement("a");
-                nameLink.classList.add("text-decoration-none");
-                nameLink.href = "/club/" + club.id;
-                nameLink.textContent = club.name;
-                nameTd.appendChild(nameLink);
-                row.appendChild(nameTd);
+            "club-table": {
+                "dataset": JSON.parse('{{ clubs|tojson }}'), // prettier-ignore
+                filter: (query, dataset) =>
+                    dataset.filter(({ name }) =>
+                        name.toUpperCase().includes(query.toUpperCase())
+                    ),
+                rowFactory: (row, club) => {
+                    const nameTd = document.createElement("td");
+                    const nameLink = document.createElement("a");
+                    nameLink.classList.add("text-decoration-none");
+                    nameLink.href = "/club/" + club.id;
+                    nameLink.textContent = club.name;
+                    nameTd.appendChild(nameLink);
+                    row.appendChild(nameTd);
 
-                const locationTd = document.createElement("td");
-                locationTd.textContent = club.location;
-                row.appendChild(locationTd);
+                    const locationTd = document.createElement("td");
+                    locationTd.textContent = club.location;
+                    row.appendChild(locationTd);
+                },
             },
-        },
-    };
+        };
 
-    for (const id of Object.keys(tables)) {
-        const table = document.getElementById(id);
+        for (const id of Object.keys(tables)) {
+            const table = document.getElementById(id);
 
-        const ths = table.querySelectorAll("th");
-        ths.forEach((th, i) => {
-            th.addEventListener("click", () => {
-                sortTable(i);
-            });
-        });
-
-        function renderTable(filteredResults) {
-            const tbody = table.querySelector("tbody");
-
-            // Clear all rows
-            const rows = tbody.querySelectorAll("tr");
-            rows.forEach((row) => {
-                tbody.removeChild(row);
+            const ths = table.querySelectorAll("th");
+            ths.forEach((th, i) => {
+                th.addEventListener("click", () => {
+                    sortTable(i);
+                })
             });
 
-            filteredResults.forEach((result) => {
-                const tr = document.createElement("tr");
-                tables[id].rowFactory(tr, result);
-                tbody.appendChild(tr);
+            function renderTable(filteredResults) {
+                const tbody = table.querySelector("tbody");
+
+                // Clear all rows
+                const rows = tbody.querySelectorAll("tr");
+                rows.forEach((row) => {
+                    tbody.removeChild(row);
+                });
+
+                filteredResults.forEach((result) => {
+                    const tr = document.createElement("tr");
+                    tables[id].rowFactory(tr, result);
+                    tbody.appendChild(tr);
+                });
+            }
+
+            const filterInput = document.getElementById("filter-input");
+            filterInput.addEventListener("keyup", () => {
+                const query = filterInput.value;
+                const filteredResults = tables[id].filter(
+                    query,
+                    tables[id].dataset
+                );
+                renderTable(filteredResults);
             });
+
+            // Initialize table
+            renderTable(tables[id].dataset);
         }
-
-        const filterInput = document.getElementById("filter-input");
-        filterInput.addEventListener("keyup", () => {
-            const query = filterInput.value;
-            const filteredResults = tables[id].filter(
-                query,
-                tables[id].dataset
-            );
-            renderTable(filteredResults);
-        });
-
-        // Initialize table
-        renderTable(tables[id].dataset);
-    }
+    })
 </script>
 
 {% endblock %}
