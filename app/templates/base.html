@@ -16,9 +16,14 @@
         <title>{{ title }}</title>
 
         <style>
-            td,
-            th {
+            td, th {
                 padding-left: 0 !important;
+            }
+
+            @media (max-width: 575px) {
+                .full-width-xs {
+                    width: 100%;
+                }
             }
         </style>
     </head>
@@ -27,10 +32,8 @@
         {% if not color %} {% set color = "bg-white" %} {% endif %}
         <nav class="navbar {{ color }}">
             <div class="container">
-                <a class="navbar-brand text-secondary" href="/"
-                    >Badminton Player Explorer</a
-                >
-                <form class="d-flex">
+                <a class="navbar-brand text-secondary" href="/">Badminton Player Explorer</a>
+                <form class="full-width-xs">
                     <input
                         class="form-control me-2"
                         type="search"
