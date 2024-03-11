@@ -65,8 +65,8 @@
                         <table id="player-table" class="table table-borderless">
                             <thead class="thead-light">
                                 <tr>
-                                    <th class="col-6"></th>
-                                    <th class="col-6"></th>
+                                    <th class="col-6">Name</th>
+                                    <th class="col-6">Club</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -151,13 +151,6 @@
 
         for (const id of Object.keys(tables)) {
             const table = document.getElementById(id);
-
-            const ths = table.querySelectorAll("th");
-            ths.forEach((th, i) => {
-                th.addEventListener("click", () => {
-                    sortTable(i);
-                })
-            });
 
             function renderTable(filteredResults) {
                 const tbody = table.querySelector("tbody");
