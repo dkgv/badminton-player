@@ -216,6 +216,8 @@ def _try_find_matches(player_id: int) -> Optional[List[Match]]:
     if not profile:
         return []
 
+    player = _try_find_player(player_id)
+
     matches = []
     sort_for_match = {}
     for i, meta in enumerate(profile.match_metadata):
@@ -248,13 +250,22 @@ def _try_find_matches(player_id: int) -> Optional[List[Match]]:
                 )
             )
 
-            print("Found existing games for match with id", meta.id)
+            print(f"Found games for match id={meta.id}")
+
+            home_players = []
+            for g in games:
+                home_players.extend([g.home_player1, g.home_player2])
+
+            home_team, away_team = meta.team1, meta.team2
+            if player.name not in home_players:
+                home_team, away_team = away_team, home_team
+
             match = Match(
                 id=meta.id,
                 date=meta.date,
                 group=meta.group,
-                home_team=meta.home_team,
-                away_team=meta.away_team,
+                home_team=home_team,
+                away_team=away_team,
                 games=games,
             )
 
