@@ -245,8 +245,12 @@ def _try_find_matches(player_id: int) -> Optional[List[Match]]:
             }
             games.sort(
                 key=lambda g: (
-                    order[g.category[3:]],
-                    int(g.category.strip()[0]),
+                    (
+                        order[g.category[3:]]
+                        if g.category[0].isdigit()
+                        else order[g.category]
+                    ),
+                    int(g.category.strip()[0]) if g.category[0].isdigit() else 0,
                 )
             )
 
