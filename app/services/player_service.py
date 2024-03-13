@@ -32,6 +32,14 @@ def get_players_for_club(club_id: int) -> List[Player]:
     return players
 
 
+def get_player_id(name: str, club_name: str) -> Optional[int]:
+    players = search_player(name, club_name)
+    if not players:
+        return None
+
+    return players[0].id
+
+
 def search_player(name: str, club: str = None) -> List[Player]:
     query = " | ".join(name.split(" "))
     fuzzy_players = supabase_utils.from_resp(
@@ -45,7 +53,7 @@ def search_player(name: str, club: str = None) -> List[Player]:
     visited = set()
     players = []
     for f in fuzzy_players:
-        if f.id in visited:
+        if f.id not in visited:
             continue
         visited.add(f.id)
         players.append(f)
@@ -256,20 +264,10 @@ def _try_find_matches(player_id: int) -> Optional[List[Match]]:
 
             print(f"Found games for match id={meta.id}")
 
-            home_players = []
-            for g in games:
-                home_players.extend([g.home_player1, g.home_player2])
-
-            home_team, away_team = meta.team1, meta.team2
-            if player.name not in home_players:
-                home_team, away_team = away_team, home_team
-
             match = Match(
                 id=meta.id,
                 date=meta.date,
                 group=meta.group,
-                home_team=home_team,
-                away_team=away_team,
                 games=games,
             )
 
@@ -285,6 +283,32 @@ def _try_find_matches(player_id: int) -> Optional[List[Match]]:
 
             sort_for_match[match.id] = meta.sort
 
+        home_players, away_players = [], []
+        for g in match.games:
+            home_players.append(g.home_player1)
+            away_players.append(g.away_player1)
+
+            if g.home_player2:
+                home_players.append(g.home_player2)
+            if g.away_player2:
+                away_players.append(g.away_player2)
+
+        home_team, away_team = meta.team1, meta.team2
+        home_club, away_club = "", ""
+
+        if player.name not in home_players:
+            home_team, away_team = away_team, home_team
+            home_club = _identify_club_name(home_players)
+            away_club = player.club_name
+        else:
+            home_club = player.club_name
+            away_club = _identify_club_name(away_players)
+
+        match.home_team = home_team
+        match.away_team = away_team
+        match.home_club = home_club
+        match.away_club = away_club
+
         matches.append(match)
 
     matches.sort(key=lambda m: sort_for_match[m.id], reverse=True)
@@ -292,7 +316,32 @@ def _try_find_matches(player_id: int) -> Optional[List[Match]]:
     return matches
 
 
+def _identify_club_name(player_names: List[str]) -> str:
+    players = supabase_utils.from_resp(
+        supabase_client.from_("players")
+        .select("*, clubs (name)")
+        .in_("bp_name", player_names)
+        .execute(),
+        Player,
+    )
+    if not players:
+        return "unknown"
+
+    print("Found players:", players, "for names:", player_names)
+    club_buckets = defaultdict(int)
+    for player in players:
+        club_buckets[player.club_name] += 1
+
+    print(club_buckets)
+
+    club_name = max(club_buckets, key=club_buckets.get)
+    return club_name
+
+
 def _upsert_game_async(match_id: str, game: Game) -> None:
+    if not game.category:
+        return
+
     def _upsert_game_job():
         row = game.to_dict()
         row["bp_match_id"] = match_id

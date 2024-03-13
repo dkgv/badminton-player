@@ -184,11 +184,15 @@
                                     <td>
                                         {{ game.category }}
                                     </td>
+                                    {% set hp1 = game.home_player1 %}
+                                    {% set hp2 = game.home_player2 %}
+                                    {% set ap1 = game.away_player1 %}
+                                    {% set ap2 = game.away_player2 %}
                                     <td>
-                                        {{ game.home_player1 }}{% if game.home_player2 %} / {{ game.home_player2 }}{% endif %}
+                                        <span class="fake-link" onclick="discoverPlayer(event, '{{ hp1 }}', '{{ match.home_club }}')">{{ hp1 }}</span>{% if hp2 %} / <span class="fake-link" onclick="discoverPlayer(event, '{{ hp2 }}', '{{ match.home_club }}')">{{ hp2 }}</span>{% endif %}
                                     </td>
                                     <td>
-                                        {{ game.away_player1 }}{% if game.away_player2 %} / {{ game.away_player2 }}{% endif %}
+                                        <span class="fake-link" onclick="discoverPlayer(event, '{{ ap1 }}', '{{ match.away_club }}')">{{ ap1 }}</span>{% if ap2 %} / <span class="fake-link" onclick="discoverPlayer(event, '{{ ap2 }}', '{{ match.away_club }}')">{{ ap2 }}</span>{% endif %}
                                     </td>
                                     {% set winner = game.get_winner() %}
                                     <td>
@@ -261,6 +265,33 @@
         star.querySelector("i.fa-solid").classList.remove("d-none");
     } else {
         star.querySelector("i.fa-regular").classList.remove("d-none");
+    }
+
+    function discoverPlayer(e, name, club) {
+        e.preventDefault();
+
+        e.target.disabled = true;
+
+        const endpoint = "/api/player/discover";
+
+        const url = new URL(endpoint, window.location.origin);
+        url.searchParams.append("name", name);
+        url.searchParams.append("club", club);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", url, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                const playerID = response.id;
+                window.location.href = "/player/" + playerID;
+            } else if (xhr.readyState === 4) {
+                window.location.href = "/search?q=" + name;
+            }
+
+            e.target.disabled = false;
+        };
+        xhr.send();
     }
 </script>
 {% endblock %}

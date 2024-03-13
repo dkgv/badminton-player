@@ -173,9 +173,11 @@ class Match:
     id: int
     date: datetime
     group: str
-    home_team: str
-    away_team: str
     games: List[Game]
+    home_team: Optional[str] = None
+    away_team: Optional[str] = None
+    home_club: Optional[str] = None
+    away_club: Optional[str] = None
 
     @property
     def home_points(self) -> int:

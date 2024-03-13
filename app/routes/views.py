@@ -43,6 +43,7 @@ def search():
     if not query:
         return render_template("search.html", players=[])
 
+    query = query.strip()
     players = player_service.search_player(query)
     clubs = club_service.search_club(query)
 
