@@ -33,7 +33,7 @@
                         type="button"
                         role="tab"
                     >
-                        🏃 Players ({{ players|length }})
+                        🏃 Players (<span id="player-count">{{ players|length }}</span>)
                     </button>
                 </li>
 
@@ -45,7 +45,7 @@
                         type="button"
                         role="tab"
                     >
-                        🏟️ Clubs ({{ clubs|length }})
+                        🏟️ Clubs (<span id="club-count">{{ clubs|length }}</span>)
                     </button>
                 </li>
             </ul>
@@ -106,7 +106,7 @@
 <script>
     document.addEventListener("DOMContentLoaded", (e) => {
         const tables = {
-            "player-table": {
+            "player": {
                 "dataset": JSON.parse('{{ players|tojson }}'), // prettier-ignore
                 filter: (query, dataset) =>
                     dataset.filter(
@@ -128,7 +128,7 @@
                     row.appendChild(clubTd);
                 },
             },
-            "club-table": {
+            "club": {
                 "dataset": JSON.parse('{{ clubs|tojson }}'), // prettier-ignore
                 filter: (query, dataset) =>
                     dataset.filter(({ name }) =>
@@ -151,7 +151,7 @@
         };
 
         for (const id of Object.keys(tables)) {
-            const table = document.getElementById(id);
+            const table = document.getElementById(id + "-table");
             if (!table) {
                 continue;
             }
@@ -179,6 +179,12 @@
                     query,
                     tables[id].dataset
                 );
+
+                const countElement = document.querySelector("#" + id + "-count");
+                if (countElement) {
+                    countElement.textContent = filteredResults.length;
+                }
+
                 renderTable(filteredResults);
             });
 
