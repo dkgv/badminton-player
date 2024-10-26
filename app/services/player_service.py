@@ -179,21 +179,30 @@ def _try_find_standings(player_id: int) -> Optional[List[Standing]]:
 
 
 def _try_find_player(player_id: int) -> Optional[Player]:
-    player = supabase_utils.from_resp(
-        supabase_client.from_("players")
-        .select("*, clubs (name)")
-        .eq("bp_id", player_id)
-        .execute(),
-        Player,
-    )
-    if player:
-        return player[0]
+    def _getter() -> Optional[Player]:
+        player = supabase_utils.from_resp(
+            supabase_client.from_("players")
+            .select("*, clubs (name)")
+            .eq("bp_id", player_id)
+            .execute(),
+            Player,
+        )
+        if player:
+            return player[0]
 
-    player = badminton_player_client.get_player(player_id)
+        player = badminton_player_client.get_player(player_id)
+        if not player:
+            return None
+
+        _upsert_player_async(player)
+
+        return player
+
+    player = _getter()
     if not player:
         return None
 
-    _upsert_player_async(player)
+    player.name = player.name.strip()
 
     return player
 
