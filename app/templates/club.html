@@ -12,11 +12,14 @@
         </div>
     </div>
 </div>
-
 <div class="container py-5">
     <div class="row">
         <div class="col">
-            <h2>{{ players|length }} Players</h2>
+            <h2 class="position-relative">
+                Found {{ players|length }} Players
+                <i class="fa fa-info-circle text-muted ms-2" data-bs-toggle="tooltip" data-bs-trigger="hover focus click" title="This list only includes players who have appeared in a match found on Badminton Player Explorer."></i>
+            </h2>
+
             <div class="list-group scrollable-list-group">
                 {% for player in players %}
                 <a
@@ -32,4 +35,21 @@
     </div>
 </div>
 
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    tooltipTriggerList.forEach(function (elem) {
+      elem.addEventListener("click", function () {
+        var tooltip = bootstrap.Tooltip.getInstance(elem);
+        if (tooltip) {
+          tooltip.toggle();
+        }
+      });
+    });
+  });
+</script>
 {% endblock %}
