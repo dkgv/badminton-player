@@ -2,7 +2,7 @@ from flask import abort
 from flask import current_app as app
 from flask import render_template, request
 
-from app.services import club_service, player_service
+from app.services import club_service, discovery_service, player_service
 
 
 @app.route("/", methods=["GET"])
@@ -17,6 +17,10 @@ def player(player_id: int):
         return abort(404)
 
     name_to_ids = player_service.get_player_ids(profile.matches)
+
+    for match in profile.matches:
+        discovery_service.enqueue_match(match, set(name_to_ids.keys()))
+
     streak = player_service.group_games_by_category(profile.games)
 
     return render_template(

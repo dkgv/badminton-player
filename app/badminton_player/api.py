@@ -99,7 +99,7 @@ class Client:
         json_data = {
             "callbackcontextkey": self._get_context_key(),
             "selectfunction": "SPSel1",
-            "name": name,
+            "name": name.strip(),
             "clubid": "",
             "playernumber": "",
             "gender": "",
@@ -122,6 +122,7 @@ class Client:
         url = f"{self.base_url}/SportsResults/Components/WebService1.asmx"
         r = requests.post(url + "/SearchPlayer", headers=headers, json=json_data)
         if r.status_code != 200:
+            print(f"BP API request returned {r.status_code}")
             return []
 
         players = []
@@ -154,7 +155,7 @@ class Client:
             players.append(
                 Player(
                     id=int(player_id),
-                    name=player_name,
+                    name=player_name.strip(),
                     club_name=player_club,
                     birth_date=birth_date,
                     club_id=int(club_id),

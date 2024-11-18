@@ -238,6 +238,7 @@ class Player:
             "bp_id": self.id,
             "bp_name": self.name,
             "bp_club_id": self.club_id,
+            "club_name": self.club_name,
             "birthdate": (
                 self.birth_date.isoformat()
                 if self.birth_date

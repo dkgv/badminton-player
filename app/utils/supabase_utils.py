@@ -11,7 +11,6 @@ def from_resp(resp: APIResponse, cls):
         return [_to_class(rows[0], cls)]
     return [_to_class(row, cls) for row in rows]
 
-
 def _to_class(obj: dict, cls):
     if not obj or not is_dataclass(cls):
         return None
@@ -20,5 +19,10 @@ def _to_class(obj: dict, cls):
     for field in fields(cls):
         if is_dataclass(field.type):
             obj[field.name] = _to_class(obj[field.name], field.type)
-    obj = {key: value for key, value in obj.items() if key in fields(cls)}
+    obj = {
+        key: (value.strip() if isinstance(value, str) else value)
+        for key, value in obj.items()
+        if key in fields(cls)
+    }
     return cls(**obj)
+

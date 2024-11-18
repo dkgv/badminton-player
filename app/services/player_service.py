@@ -2,14 +2,13 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from queue import Queue
 from threading import Thread
 from typing import Dict, List, Optional
 
 from pyjarowinkler import distance
 
 from app.badminton_player.models import Game, Match, Player, PlayerMeta, Standing
-from app.services import badminton_player_client, supabase_client
+from app.services import badminton_player_client, discovery_service, supabase_client
 from app.utils import supabase_utils
 
 
@@ -42,31 +41,46 @@ def get_player_id(name: str, club_name: str) -> Optional[int]:
     return players[0].id
 
 
+def get_player_ids(matches: List[Match]) -> Dict[str, int]:
+    args = {}
+    for match in matches:
+        for game in match.games:
+            for player_name in game.home_players():
+                args[player_name] = discovery_service.clean_team_name(match.home_team)
+            for player_name in game.away_players():
+                args[player_name] = discovery_service.clean_team_name(match.away_team)
+
+    filtered_players = supabase_client.rpc(
+        "get_players_by_name_and_team", {"name_to_team": args}
+    ).execute()
+
+    return {p["bp_name"].strip(): p["bp_id"] for p in filtered_players.data if p["bp_id"]}
+
+
 def search_player(name: str, club: str = None) -> List[Player]:
-    query = " | ".join(name.split(" "))
+    parts = name.strip().split(" ")
+    query = " & ".join(f"'{p}'" for p in parts if p)
     fuzzy_players = supabase_utils.from_resp(
-        supabase_client.from_("players")
-        .select("*, clubs (name)")
-        .text_search("bp_name", query)
-        .execute(),
+        supabase_client.from_("players").select("*").text_search("bp_name", query).execute(),
         Player,
     )
 
     visited = set()
     players = []
     for f in fuzzy_players:
-        if f.id not in visited:
+        if f.id in visited:
             continue
         visited.add(f.id)
         players.append(f)
 
-    bp_players = badminton_player_client.search_player(name, club)
+    bp_players = badminton_player_client.search_player(name, discovery_service.clean_team_name(club))
     for p in bp_players:
         if p.id in visited:
+            print(f"Already visited player with id {p.id} ({p.name})")
             continue
         visited.add(p.id)
         players.append(p)
-
+        discovery_service.dequeue_player(p.name, p.club_name)
         _upsert_player_async(p)
 
     query = name.lower().replace(" ", "")
@@ -120,76 +134,6 @@ def get_player_profile(player_id: int) -> Optional[PlayerProfile]:
         matches=matches,
         standings=standings,
     )
-
-
-def get_player_ids(matches: List[Match]) -> Dict[str, int]:
-    name_to_team = {}
-    q = Queue()
-
-    for match in matches:
-        for game in match.games:
-            for hp in game.home_players():
-                name_to_team[hp] = match.home_team
-
-            for ap in game.away_players():
-                name_to_team[ap] = match.away_team
-
-    for name, team in name_to_team.items():
-        regexp = r"^(.*?)(?:\s\d+)?$"
-        match = re.match(regexp, team)
-        if match:
-            name_to_team[name] = match.group(1)
-
-    for name, club in name_to_team.items():
-        q.put((name, club))
-
-    print()
-    print(name_to_team)
-    print()
-
-    filtered_players = supabase_client.rpc(
-        "get_players_by_name_and_team", {"name_to_team": name_to_team}
-    ).execute()
-
-    nameclub_to_id = {
-        (p["bp_name"], p["club_name"]): p["bp_id"]
-        for p in filtered_players.data
-        if p["bp_id"]
-    }
-
-    def worker():
-        while not q.empty():
-            player_name, club = q.get()
-            if (player_name, club) in nameclub_to_id or "Ikke fremmødt" in player_name:
-                q.task_done()
-                continue
-
-            try:
-                print("Searching for player: ", player_name, club)
-                resp = search_player(player_name, club)
-                if not resp:
-                    q.task_done()
-                    continue
-
-                # print(f"Player query: {player_name} {club} -> {resp}")
-                player = resp[0]
-                if not player or player.name != player_name:
-                    q.task_done()
-                    continue
-
-                nameclub_to_id[(player_name, club)] = player.id
-            except Exception as e:
-                print("Player->ID worker failed:", e)
-
-            q.task_done()
-
-    for _ in range(5):
-        t = Thread(target=worker)
-        t.start()
-
-    q.join()
-
-    return {tuple[0]: id for tuple, id in nameclub_to_id.items()}
 
 
 def group_games_by_category(games: List[Game]) -> Dict[str, List[Game]]:
@@ -280,10 +224,11 @@ def _try_find_player(player_id: int) -> Optional[Player]:
 
 
 def _upsert_player_async(player: Player) -> None:
-    def _upsert_player_job():
-        if not player.club_id:
-            return
+    if not player.club_id:
+        print(f"Can't save player {player.name} without a club id")
+        return
 
+    def _upsert_player_job():
         supabase_client.from_("clubs").upsert(
             {
                 "bp_id": player.club_id,
@@ -408,12 +353,9 @@ def _identify_club_name(player_names: List[str]) -> str:
     if not players:
         return "unknown"
 
-    print("Found players:", players, "for names:", player_names)
     club_buckets = defaultdict(int)
     for player in players:
         club_buckets[player.club_name] += 1
-
-    print(club_buckets)
 
     club_name = max(club_buckets, key=club_buckets.get)
     return club_name

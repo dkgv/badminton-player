@@ -4,18 +4,18 @@ version = "0.1.0"
 description = ""
 authors = ["Gustav <gustav-git@pm.me>"]
 readme = "README.md"
-packages = [{include = "badminton_player"}]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "3.12.0"
 requests = "^2.28.2"
 Flask = "^2.2.3"
-pandas = "^1.5.3"
+pandas = "^2.2.3"
 beautifulsoup4 = "^4.12.0"
 lxml = "^4.9.2"
 gunicorn = "^20.1.0"
 python-dotenv = "^1.0.0"
-supabase = "^1.0.2"
+supabase = "^2.10.0"
 pyjarowinkler = "^1.8"
 cachetools = "^5.3.2"
 

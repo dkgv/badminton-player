@@ -76,7 +76,7 @@
             const form = document.querySelector("form");
 
             form.addEventListener("submit", (event) => {
-                event.preventDefault(); // prevent default form submission behavior
+                event.preventDefault();
                 const input = form.querySelector("input");
                 const searchQuery = input.value;
                 const url = `/search?q=${searchQuery}`;

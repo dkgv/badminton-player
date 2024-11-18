@@ -187,11 +187,15 @@
                                     {% set hp2 = game.home_player2 %}
                                     {% set ap1 = game.away_player1 %}
                                     {% set ap2 = game.away_player2 %}
+                                    {% set hp1_known = hp1 in name_to_ids %}
+                                    {% set hp2_known = hp2 in name_to_ids %}
+                                    {% set ap1_known = ap1 in name_to_ids %}
+                                    {% set ap2_known = ap2 in name_to_ids %}
                                     <td>
-                                        <span class="fake-link" onclick="discoverPlayer(event, '{{ hp1 }}', '{{ match.home_club }}')">{{ hp1 }}</span>{% if hp2 %} / <span class="fake-link" onclick="discoverPlayer(event, '{{ hp2 }}', '{{ match.home_club }}')">{{ hp2 }}</span>{% endif %}
+                                        {% if hp1_known %}<a href="/player/{{ name_to_ids[hp1] }}">{{ hp1 }}</a>{% else %}<span class="fake-link" onclick="discoverPlayer(event, '{{ hp1 }}', '{{ match.home_club }}')">{{ hp1 }}</span>{% endif %}{% if hp2 %} / {% if hp2_known %}<a href="/player/{{ name_to_ids[hp2] }}">{{ hp2 }}</a>{% else %}<span class="fake-link" onclick="discoverPlayer(event, '{{ hp2 }}', '{{ match.home_club }}')">{{ hp2 }}</span>{% endif %}{% endif %}
                                     </td>
                                     <td>
-                                        <span class="fake-link" onclick="discoverPlayer(event, '{{ ap1 }}', '{{ match.away_club }}')">{{ ap1 }}</span>{% if ap2 %} / <span class="fake-link" onclick="discoverPlayer(event, '{{ ap2 }}', '{{ match.away_club }}')">{{ ap2 }}</span>{% endif %}
+                                        {% if ap1_known %}<a href="/player/{{ name_to_ids[ap1] }}">{{ ap1 }}</a>{% else %}<span class="fake-link" onclick="discoverPlayer(event, '{{ ap1 }}', '{{ match.away_club }}')">{{ ap1 }}</span>{% endif %}{% if ap2 %} / {% if ap2_known %}<a href="/player/{{ name_to_ids[ap2] }}">{{ ap2 }}</a>{% else %}<span class="fake-link" onclick="discoverPlayer(event, '{{ ap2 }}', '{{ match.away_club }}')">{{ ap2 }}</span>{% endif %}{% endif %}
                                     </td>
                                     {% set winner = game.get_winner() %}
                                     <td>
