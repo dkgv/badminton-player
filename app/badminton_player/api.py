@@ -292,9 +292,9 @@ class Client:
                             else None
                         ),
                         group=x["Række"],
-                        home_team=x["Hold"],
-                        away_team=x["Modstander"],
                         sort=get_sort(),
+                        team1=x["Hold"],
+                        team2=x["Modstander"],
                     ),
                     axis=1,
                 )

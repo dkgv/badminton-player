@@ -16,21 +16,35 @@
         <title>{{ title }}</title>
 
         <style>
-            td,
-            th {
+            td, th {
                 padding-left: 0 !important;
             }
+
+            @media (max-width: 575px) {
+                .full-width-xs {
+                    width: 100%;
+                }
+            }
+
+            .fake-link {
+                cursor: pointer;
+                color: rgba(var(--bs-link-color-rgb));
+            }
+
+            .fake-link:hover {
+                --bs-link-color-rgb: var(--bs-link-hover-color-rgb);
+            }
         </style>
+
+        <script src="https://tinymetrics.io/tm.js"></script>
     </head>
 
     <body>
         {% if not color %} {% set color = "bg-white" %} {% endif %}
         <nav class="navbar {{ color }}">
             <div class="container">
-                <a class="navbar-brand text-secondary" href="/"
-                    >Badminton Player Explorer</a
-                >
-                <form class="d-flex">
+                <a class="navbar-brand text-secondary" href="/">Badminton Player Explorer</a>
+                <form class="full-width-xs">
                     <input
                         class="form-control me-2"
                         type="search"
@@ -45,7 +59,7 @@
         {% endblock %}
 
         <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js"></script>
         <script>
             const form = document.querySelector("form");
 

@@ -11,6 +11,6 @@ def create_app() -> Flask:
     app = Flask(__name__)
 
     with app.app_context():
-        from app.routes import views
+        from app.routes import api, views
 
         return app

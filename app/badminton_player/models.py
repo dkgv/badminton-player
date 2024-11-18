@@ -155,16 +155,16 @@ class MatchMeta:
     sort: int
     date: datetime
     group: str
-    home_team: str
-    away_team: str
+    team1: Optional[str]
+    team2: Optional[str]
 
     def to_dict(self) -> dict:
         return {
             "id": self.id,
             "date": self.date,
             "group": self.group,
-            "home_team": self.home_team,
-            "away_team": self.away_team,
+            "team1": self.team1,
+            "team2": self.team2,
         }
 
 
@@ -173,9 +173,11 @@ class Match:
     id: int
     date: datetime
     group: str
-    home_team: str
-    away_team: str
     games: List[Game]
+    home_team: Optional[str] = None
+    away_team: Optional[str] = None
+    home_club: Optional[str] = None
+    away_club: Optional[str] = None
 
     @property
     def home_points(self) -> int:

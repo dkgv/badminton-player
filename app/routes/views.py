@@ -1,3 +1,4 @@
+from flask import abort
 from flask import current_app as app
 from flask import render_template, request
 
@@ -13,7 +14,7 @@ def index():
 def player(player_id: int):
     profile = player_service.get_player_profile(player_id)
     if not profile:
-        return "Not found", 404
+        return abort(404)
 
     name_to_ids = player_service.get_player_ids(profile.matches)
     streak = player_service.group_games_by_category(profile.games)
@@ -34,11 +35,10 @@ def player(player_id: int):
 def club(club_id: int):
     club = club_service.get_club(club_id)
     if not club:
-        return "Not found", 404
+        return abort(404)
 
     players = player_service.get_players_for_club(club_id)
 
-    print(club)
     return render_template("club.html", club=club, players=players)
 
 
@@ -48,9 +48,15 @@ def search():
     if not query:
         return render_template("search.html", players=[])
 
+    query = query.strip()
     players = player_service.search_player(query)
     clubs = club_service.search_club(query)
 
-    print(players, clubs)
+    print(f"Searched for {query}, found {len(players)} players and {len(clubs)} clubs")
 
     return render_template("search.html", players=players, clubs=clubs, query=query)
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template("404.html"), 404

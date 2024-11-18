@@ -16,9 +16,8 @@ class Club:
 
 
 def search_club(name: str) -> List[Club]:
-    query = " | ".join(name.split(" "))
     fuzzy_clubs = supabase_utils.from_resp(
-        supabase_client.from_("clubs").select("*").text_search("name", query).execute(),
+        supabase_client.from_("clubs").select("*").ilike("name", f"%{name}%").execute(),
         Club,
     )
     if not fuzzy_clubs:
