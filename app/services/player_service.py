@@ -258,7 +258,8 @@ def _try_find_matches(player_id: int) -> Optional[List[Match]]:
                 "HS": 2,
                 "DD": 3,
                 "HD": 4,
-                "D": 5,
+                "S": 5,
+                "D": 6,
             }
             games.sort(
                 key=lambda g: (
