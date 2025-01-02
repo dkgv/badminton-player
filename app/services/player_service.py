@@ -163,7 +163,7 @@ def _try_find_standings(player_id: int) -> Optional[List[Standing]]:
 
     print(f"Retrieving standings for player with id {player_id}")
     profile = badminton_player_client.get_profile(player_id)
-    if not profile or not profile.standings.any():
+    if not profile or len(profile.standings) == 0:
         return None
 
     standings_data = [s.to_dict(player_id) for s in profile.standings]
