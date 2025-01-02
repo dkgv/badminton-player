@@ -169,7 +169,7 @@ class MatchMeta:
 
 
 @dataclass
-class Match:
+class TeamMatch:
     id: int
     date: datetime
     group: str
@@ -257,7 +257,24 @@ class Player:
 
 
 @dataclass
-class PlayerMeta:
+class Tournament:
+    bp_id: int
+    date: datetime
+    host_club: str
+    level: str
+
+    def to_dict(self) -> dict:
+        return {
+            "bp_id": self.bp_id,
+            "date": self.date.strftime("%Y-%m-%dT%H:%M:%S%z"),
+            "host_club": self.host_club,
+            "level": self.level,
+        }
+
+
+@dataclass
+class PlayerPerformance:
     season_start_points: int
     standings: List[Standing]
-    match_metadata: List[MatchMeta]
+    match_metadata: Optional[List[MatchMeta]]
+    tournaments: List[Tournament]

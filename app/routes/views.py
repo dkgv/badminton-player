@@ -12,7 +12,7 @@ def index():
 
 @app.route("/player/<player_id>", methods=["GET"])
 def player(player_id: int):
-    profile = player_service.get_player_profile(player_id)
+    profile = player_service.build_player_profile(player_id)
     if not profile:
         return abort(404)
 
@@ -24,6 +24,7 @@ def player(player_id: int):
         player=profile.player,
         matches=profile.matches,
         standings=profile.standings,
+        tournaments=profile.tournaments,
     )
 
 

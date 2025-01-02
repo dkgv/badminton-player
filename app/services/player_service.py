@@ -6,18 +6,26 @@ from typing import Dict, List, Optional
 
 from pyjarowinkler import distance
 
-from app.badminton_player.models import Game, Match, Player, PlayerMeta, Standing
+from app.badminton_player.models import (
+    Game,
+    Player,
+    PlayerPerformance,
+    Standing,
+    TeamMatch,
+    Tournament,
+)
 from app.services import badminton_player_client, supabase_client
 from app.utils import supabase_utils
 
 
 @dataclass
-class PlayerProfile:
-    metadata: PlayerMeta
+class AggregatePlayerProfile:
+    metadata: PlayerPerformance
     player: Player
     games: List[Game]
-    matches: List[Match]
+    matches: List[TeamMatch]
     standings: List[Standing]
+    tournaments: List[Tournament]
 
 
 def get_players_for_club(club_id: int) -> List[Player]:
@@ -82,7 +90,7 @@ def search_player(name: str, club: str = None) -> List[Player]:
     return players
 
 
-def get_player_profile(player_id: int) -> Optional[PlayerProfile]:
+def build_player_profile(player_id: int) -> Optional[AggregatePlayerProfile]:
     player_id = int(player_id)
 
     player = _try_find_player(player_id)
@@ -94,7 +102,7 @@ def get_player_profile(player_id: int) -> Optional[PlayerProfile]:
     if not standings:
         print(f"Could not find standing for player with id {player_id}")
 
-    matches = _try_find_matches(player_id)
+    matches = _try_find_team_matches(player_id)
     if not matches:
         print(f"Could not find matches for player with id {player_id}")
 
@@ -102,21 +110,22 @@ def get_player_profile(player_id: int) -> Optional[PlayerProfile]:
     if not games:
         print(f"Could not find games for player with id {player_id}")
 
-    meta = badminton_player_client.get_profile(player_id)
-    if not meta:
+    performance = badminton_player_client.get_performance_cached_1h(player_id)
+    if not performance:
         print(f"Could not find meta for player with id {player_id}")
         return None
 
-    return PlayerProfile(
+    tournaments = _try_find_tournaments(player_id)
+    if not tournaments:
+        print(f"Could not find tournaments for player with id {player_id}")
+
+    return AggregatePlayerProfile(
         player=player,
-        metadata=PlayerMeta(
-            standings=standings,
-            season_start_points=meta.season_start_points,
-            match_metadata=[],
-        ),
+        metadata=performance,
         games=games,
         matches=matches,
         standings=standings,
+        tournaments=tournaments,
     )
 
 
@@ -148,6 +157,13 @@ def group_games_by_category(games: List[Game]) -> Dict[str, List[Game]]:
 
 
 def _try_find_standings(player_id: int) -> Optional[List[Standing]]:
+    def sort_standings(standings: List[Standing]) -> List[Standing]:
+        return sorted(
+            standings,
+            key=lambda s: s.category,
+            reverse=True,
+        )
+
     one_day_ago = datetime.now() - timedelta(days=1)
     standings = supabase_utils.from_resp(
         supabase_client.from_("standings")
@@ -159,10 +175,10 @@ def _try_find_standings(player_id: int) -> Optional[List[Standing]]:
     )
     if standings:
         print(f"Found existing standings for player with id {player_id}")
-        return standings
+        return sort_standings(standings)
 
     print(f"Retrieving standings for player with id {player_id}")
-    profile = badminton_player_client.get_profile(player_id)
+    profile = badminton_player_client.get_performance_cached_1h(player_id)
     if not profile or len(profile.standings) == 0:
         return None
 
@@ -175,7 +191,8 @@ def _try_find_standings(player_id: int) -> Optional[List[Standing]]:
         on_conflict="bp_player_id,category",
     ).execute()
 
-    return list(profile.standings)
+    standings = list(profile.standings)
+    return sort_standings(standings)
 
 
 def _try_find_player(player_id: int) -> Optional[Player]:
@@ -228,8 +245,8 @@ def _upsert_player_async(player: Player) -> None:
     t.start()
 
 
-def _try_find_matches(player_id: int) -> Optional[List[Match]]:
-    profile = badminton_player_client.get_profile(player_id)
+def _try_find_team_matches(player_id: int) -> Optional[List[TeamMatch]]:
+    profile = badminton_player_client.get_performance_cached_1h(player_id)
     if not profile:
         return []
 
@@ -274,7 +291,7 @@ def _try_find_matches(player_id: int) -> Optional[List[Match]]:
 
             print(f"Found games for match id={meta.id}")
 
-            match = Match(
+            match = TeamMatch(
                 id=meta.id,
                 date=meta.date,
                 group=meta.group,
@@ -289,6 +306,7 @@ def _try_find_matches(player_id: int) -> Optional[List[Match]]:
                 continue
 
             for game in match.games:
+                # TODO: are we persisting games correctly?
                 _upsert_game_async(meta.id, game)
 
             sort_for_match[match.id] = meta.sort
@@ -352,16 +370,16 @@ def _upsert_game_async(match_id: str, game: Game) -> None:
     if not game.category:
         return
 
-    def _upsert_game_job():
+    def upsert_game():
         row = game.to_dict()
         row["bp_match_id"] = match_id
         supabase_client.from_("games").upsert(row).execute()
 
-    t = Thread(target=_upsert_game_job)
+    t = Thread(target=upsert_game)
     t.start()
 
 
-def _try_find_games(player_name: str, matches: List[Match]):
+def _try_find_games(player_name: str, matches: List[TeamMatch]) -> List[Game]:
     if not matches:
         return []
 
@@ -376,3 +394,32 @@ def _try_find_games(player_name: str, matches: List[Match]):
     )
 
     return games
+
+
+def _upsert_tournaments_async(player_id: int, tournaments: List[Tournament]) -> None:
+    if not tournaments:
+        return
+
+    def upsert_tournaments():
+        for tournament in tournaments:
+            row = tournament.to_dict()
+            row["bp_player_id"] = player_id
+            supabase_client.from_("tournaments").upsert(row).execute()
+
+    t = Thread(target=upsert_tournaments)
+    t.start()
+
+
+def _try_find_tournaments(player_id: int) -> List[Tournament]:
+    profile = badminton_player_client.get_performance_cached_1h(player_id)
+    if not profile:
+        return []
+
+    if not profile.tournaments:
+        return []
+
+    _upsert_tournaments_async(player_id, profile.tournaments)
+
+    profile.tournaments.sort(key=lambda t: t.date, reverse=True)
+
+    return profile.tournaments

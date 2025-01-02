@@ -20,12 +20,13 @@ from bs4 import BeautifulSoup
 
 from app.badminton_player.models import (
     Game,
-    Match,
     MatchMeta,
     Player,
-    PlayerMeta,
+    PlayerPerformance,
     Set,
     Standing,
+    TeamMatch,
+    Tournament,
 )
 
 
@@ -164,7 +165,7 @@ class Client:
         return players
 
     @cachetools.func.ttl_cache(ttl=3600)
-    def get_profile(self, player_id: int) -> PlayerMeta | None:
+    def get_performance_cached_1h(self, player_id: int) -> PlayerPerformance | None:
         headers = {
             "authority": "badmintonplayer.dk",
             "accept": "*/*",
@@ -307,13 +308,35 @@ class Client:
                     axis=1,
                 )
 
-        return PlayerMeta(
+        tournaments = []
+        if len(tables) > 3:
+            tournaments_df = parse_as_df(tables[3])  # turneringer
+
+            def get_tournament_id(x):
+                print("x", x)
+                number_regex = re.compile(r"\d+")
+                match = number_regex.search(x["Række_html"])
+                return int(match.group())
+
+            for row in tournaments_df.iterrows():
+                row = row[1]
+                tournaments.append(
+                    Tournament(
+                        bp_id=get_tournament_id(row),
+                        host_club=row["Klub"],
+                        level=row["Række"],
+                        date=datetime.strptime(row["Dato"], "%d-%m-%Y"),
+                    )
+                )
+
+        return PlayerPerformance(
             season_start_points=points_at_start,
             match_metadata=matches,
             standings=standings,
+            tournaments=tournaments,
         )
 
-    def get_match(self, match_id: int) -> Match:
+    def get_match(self, match_id: int) -> TeamMatch:
         print("Getting match", match_id)
 
         url = f"http://badmintonplayer.dk/DBF/HoldTurnering/UdskrivHoldkamp/?match={match_id}"
@@ -419,7 +442,7 @@ class Client:
         games = get_games(tables[2])
         overall_result = tables[1]
 
-        return Match(
+        return TeamMatch(
             id=int(details["Kampnr"]),
             group=details["Række"],
             date=date,
