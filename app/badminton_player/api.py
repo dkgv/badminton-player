@@ -210,10 +210,18 @@ class Client:
             t for t in tables if "playerprofileuserlist" not in t.attrs.get("class", [])
         ]
 
+        print(f"Found {len(tables)} tables in total")
+
         # remove tables if they contain a row that contains YYYY/YYYY text (season selector)
         tables = [
             t for t in tables if not t.find("td", text=re.compile(r"\d\d\d\d/\d\d\d\d"))
         ]
+
+        print(f"Found {len(tables)} tables after removing season selector")
+
+        tables = [t for t in tables if len(t.find_all(recursive=False)) > 0]
+
+        print(f"Found {len(tables)} tables after removing empty tables")
 
         cells = tables[0].find_all("td")
         if len(cells) > 1:
