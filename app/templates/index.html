@@ -19,12 +19,17 @@
                 <div class="col py-5 my-5">
                     <h1>🏸 Badminton Player Explorer</h1>
                     <form class="d-flex">
-                        <input
-                            class="form-control form-control-lg me-2"
-                            type="search"
-                            placeholder="Find a player or club by name"
-                            autofocus
-                        />
+                        <div class="input-group input-group-lg">
+                            <input
+                                class="form-control"
+                                type="search"
+                                placeholder="Find a player or club by name"
+                                autofocus
+                            />
+                            <button class="btn btn-outline-secondary" type="submit" style="border-color: #ced4da">
+                                <small>🔍</small>
+                            </button>
+                        </div>
                     </form>
 
                     <div id="starred-players"></div>
@@ -77,8 +82,13 @@
 
             form.addEventListener("submit", (event) => {
                 event.preventDefault(); // prevent default form submission behavior
+
                 const input = form.querySelector("input");
                 const searchQuery = input.value;
+                if (!searchQuery) {
+                    return;
+                }
+
                 const url = `/search?q=${searchQuery}`;
                 window.location.href = url; // redirect to the search page with the search query
             });
