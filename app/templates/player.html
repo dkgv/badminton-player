@@ -187,13 +187,13 @@
                                     {% set hp2 = game.home_player2 %}
                                     {% set ap1 = game.away_player1 %}
                                     {% set ap2 = game.away_player2 %}
-                                    <td>
-                                        <span class="fake-link" onclick="discoverPlayer(event, '{{ hp1 }}', '{{ match.home_club }}')">{{ hp1 }}</span>{% if hp2 %} / <span class="fake-link" onclick="discoverPlayer(event, '{{ hp2 }}', '{{ match.home_club }}')">{{ hp2 }}</span>{% endif %}
-                                    </td>
-                                    <td>
-                                        <span class="fake-link" onclick="discoverPlayer(event, '{{ ap1 }}', '{{ match.away_club }}')">{{ ap1 }}</span>{% if ap2 %} / <span class="fake-link" onclick="discoverPlayer(event, '{{ ap2 }}', '{{ match.away_club }}')">{{ ap2 }}</span>{% endif %}
-                                    </td>
                                     {% set winner = game.get_winner() %}
+                                    <td>
+                                        <span class="fake-link {% if winner == 'home' %}fw-semibold{% endif %}" onclick="discoverPlayer(event, '{{ hp1 }}', '{{ match.home_club }}')">{{ hp1 }}</span>{% if hp2 %} / <span class="fake-link {% if winner == 'home' %}fw-semibold{% endif %}" onclick="discoverPlayer(event, '{{ hp2 }}', '{{ match.home_club }}')">{{ hp2 }}</span>{% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="fake-link {% if winner == 'away' %}fw-semibold{% endif %}" onclick="discoverPlayer(event, '{{ ap1 }}', '{{ match.away_club }}')">{{ ap1 }}</span>{% if ap2 %} / <span class="fake-link {% if winner == 'away' %}fw-semibold{% endif %}" onclick="discoverPlayer(event, '{{ ap2 }}', '{{ match.away_club }}')">{{ ap2 }}</span>{% endif %}
+                                    </td>
                                     <td>
                                         {% if game.sets|length > 0 %}
                                         {{ game.sets[0].to_html(winner) }}
