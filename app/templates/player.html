@@ -85,7 +85,7 @@
                                     {% set limit = 3 %}
                                 {% endif %}
                                 
-                                {% set games = streak[s.category] %}
+                                {% set games = streak[s.category]|sort(attribute='date', reverse=true) %}
                                 {% if games|length > limit %}
                                     {% set games = games[:limit] %}
                                 {% endif %}
