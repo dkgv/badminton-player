@@ -164,6 +164,37 @@ class Client:
 
         return players
 
+    def __parse_as_df(self, table) -> pd.DataFrame:
+        columns = []
+        for th in table.find_all("th"):
+            columns.append(th.text)
+
+        df = pd.DataFrame(columns=columns)
+
+        rows = table.find_all("tr")
+        for row in rows:
+            cells = row.find_all("td")
+            if len(cells) == 0:
+                continue
+
+            if len(cells) != len(columns):
+                print("Could not parse row", row)
+                print("Expected", len(columns), "columns, got", len(cells))
+                continue
+
+            df_row = {}
+
+            for i, cell in enumerate(cells):
+                df_row[columns[i]] = cell.text
+                df_row[f"{columns[i]}_html"] = str(cell)
+
+            df_row = pd.DataFrame(
+                df_row, index=[0]
+            )  # convert the dictionary to a DataFrame with a single row
+            df = pd.concat([df, df_row], ignore_index=True)
+
+        return df
+
     @cachetools.func.ttl_cache(ttl=3600)
     def get_performance_cached_1h(self, player_id: int) -> PlayerPerformance | None:
         headers = {
@@ -224,47 +255,26 @@ class Client:
 
         print(f"Found {len(tables)} tables after removing empty tables")
 
-        cells = tables[0].find_all("td")
+        index = 0
+
+        # tables[0] tilmeldingsniveau ved sæsonstart
+        cells = tables[index].find_all("td")
         if len(cells) > 1:
             points_at_start = int(cells[1].text)
         else:
             points_at_start = -1
 
-        def parse_as_df(table) -> pd.DataFrame:
-            columns = []
-            for th in table.find_all("th"):
-                columns.append(th.text)
+        index += 1
 
-            df = pd.DataFrame(columns=columns)
-
-            rows = table.find_all("tr")
-            for row in rows:
-                cells = row.find_all("td")
-                if len(cells) == 0:
-                    continue
-
-                if len(cells) != len(columns):
-                    print("Could not parse row", row)
-                    print("Expected", len(columns), "columns, got", len(cells))
-                    continue
-
-                df_row = {}
-
-                for i, cell in enumerate(cells):
-                    df_row[columns[i]] = cell.text
-                    df_row[f"{columns[i]}_html"] = str(cell)
-
-                df_row = pd.DataFrame(
-                    df_row, index=[0]
-                )  # convert the dictionary to a DataFrame with a single row
-                df = pd.concat([df, df_row], ignore_index=True)
-
-            return df
+        cells = tables[index].find_all("td")
+        if len(cells) > 1 and "LMU" in cells[0].text:
+            # tables[1] tilmeldingsniveau ved lmu
+            index += 1
 
         # level_ = tables[0] # niveau ved sæsonstart
         # tournaments = parse_as_df(tables[3]) # turneringer
         if len(tables) > 1:
-            standings = parse_as_df(tables[1])
+            standings = self.__parse_as_df(tables[index])
 
             standings = standings.apply(
                 lambda x: Standing(
@@ -279,6 +289,8 @@ class Client:
         else:
             standings = pd.Series()
 
+        index += 1
+
         sort = 0
 
         def get_sort():
@@ -288,7 +300,7 @@ class Client:
 
         matches = []
         if len(tables) > 2:
-            matches = parse_as_df(tables[2])  # holdkampe
+            matches = self.__parse_as_df(tables[index])  # holdkampe
             # if not Kampdato in matches.columns: set empty
 
             if "Kampdato" in matches.columns:
@@ -308,9 +320,11 @@ class Client:
                     axis=1,
                 )
 
+        index += 1
+
         tournaments = []
         if len(tables) > 3:
-            tournaments_df = parse_as_df(tables[3])  # turneringer
+            tournaments_df = self.__parse_as_df(tables[index])  # turneringer
 
             def get_tournament_id(x):
                 print("x", x)
