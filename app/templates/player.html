@@ -135,13 +135,7 @@
                         <a class="accordion-button text-decoration-none {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#a{{ match.id }}">
                             <div class="d-flex justify-content-between align-items-center w-100">
                                 <div>
-                                    {% if match.on_winning_team(player.name) %}
-                                    <span class="badge bg-success me-3">W</span>
-                                    {% else %}
-                                    <span class="badge bg-danger me-3">L</span>
-                                    {% endif %}
-
-                                    {{ match.home_team }} vs {{ match.away_team }} <span class="text-muted">({{ match.home_points }}-{{ match.away_points }})</span>
+                                    {% if match.on_winning_team(player.name) %}<span class="badge bg-success me-3" style="width: 30px">W</span>{% else %}<span style="width: 30px" class="badge bg-danger me-3">L</span>{% endif %}{{ match.home_team }} vs {{ match.away_team }} <span class="text-muted">({{ match.home_points }}-{{ match.away_points }})</span>
                                 </div>
                                 {% if match.date %}
                                 <span class="me-3 text-muted">{{ match.date.strftime("%d %b, %Y") }}</span>

@@ -251,6 +251,8 @@ def _try_find_team_matches(player_id: int) -> Optional[List[TeamMatch]]:
         return []
 
     player = _try_find_player(player_id)
+    if not player:
+        return []
 
     matches = []
     sort_for_match = {}
