@@ -11,6 +11,7 @@ recommendation: leave
 import re
 import time
 from datetime import datetime
+from enum import Enum
 from typing import Dict, List
 
 import cachetools.func
@@ -28,6 +29,13 @@ from app.badminton_player.models import (
     TeamMatch,
     Tournament,
 )
+
+
+class TableType(Enum):
+    TILMELDINGSNIVEAU = 0
+    STANDINGS = 1
+    MATCHES = 2
+    TOURNAMENTS = 3
 
 
 class Client:
@@ -177,20 +185,19 @@ class Client:
             if len(cells) == 0:
                 continue
 
-            if len(cells) != len(columns):
-                print("Could not parse row", row)
-                print("Expected", len(columns), "columns, got", len(cells))
-                continue
+            if len(cells) == len(columns):
+                df_row = {}
 
-            df_row = {}
+                for i, cell in enumerate(cells):
+                    df_row[columns[i]] = cell.text
+                    df_row[f"{columns[i]}_html"] = str(cell)
 
-            for i, cell in enumerate(cells):
-                df_row[columns[i]] = cell.text
-                df_row[f"{columns[i]}_html"] = str(cell)
+                df_row = pd.DataFrame(
+                    df_row, index=[0]
+                )  # convert the dictionary to a DataFrame with a single row
+            else:
+                return pd.read_html(str(table))[0]
 
-            df_row = pd.DataFrame(
-                df_row, index=[0]
-            )  # convert the dictionary to a DataFrame with a single row
             df = pd.concat([df, df_row], ignore_index=True)
 
         return df
@@ -237,59 +244,41 @@ class Client:
         json_data = response.json()
         soup = BeautifulSoup(json_data["d"]["Html"], features="lxml")
 
-        tables = soup.find_all("table")
         tables = [
-            t for t in tables if "playerprofileuserlist" not in t.attrs.get("class", [])
+            t
+            for t in soup.find_all("table")
+            if "playerprofileuserlist" not in t.attrs.get("class", [])
+            and len(t.find_all(recursive=False)) > 0
         ]
 
-        print(f"Found {len(tables)} tables in total")
+        print(f"{len(tables)} tables found in total")
 
-        # remove tables if they contain a row that contains YYYY/YYYY text (season selector)
-        tables = [
-            t for t in tables if not t.find("td", text=re.compile(r"\d\d\d\d/\d\d\d\d"))
-        ]
+        tables = [self.__parse_as_df(t) for t in tables]
 
-        print(f"Found {len(tables)} tables after removing season selector")
+        table_mapping = self.__identify_tables(tables)
 
-        tables = [t for t in tables if len(t.find_all(recursive=False)) > 0]
+        points_at_start = -1
+        if TableType.TILMELDINGSNIVEAU in table_mapping:
+            table = table_mapping[TableType.TILMELDINGSNIVEAU]
+            points_at_start = int(table.iloc[0][1])
 
-        print(f"Found {len(tables)} tables after removing empty tables")
+        if TableType.STANDINGS in table_mapping:
+            standings = table_mapping[TableType.STANDINGS]
 
-        index = 0
-
-        # tables[0] tilmeldingsniveau ved sæsonstart
-        cells = tables[index].find_all("td")
-        if len(cells) > 1:
-            points_at_start = int(cells[1].text)
-        else:
-            points_at_start = -1
-
-        index += 1
-
-        cells = tables[index].find_all("td")
-        if len(cells) > 1 and "LMU" in cells[0].text:
-            # tables[1] tilmeldingsniveau ved lmu
-            index += 1
-
-        # level_ = tables[0] # niveau ved sæsonstart
-        # tournaments = parse_as_df(tables[3]) # turneringer
-        if len(tables) > 1:
-            standings = self.__parse_as_df(tables[index])
+            standings = standings[standings["Rangliste"] != "Tilmeldingsniveau"]
 
             standings = standings.apply(
                 lambda x: Standing(
                     category=x["Rangliste"],
                     tier=x["Række"],
-                    num_points=int(x["Point"]),
-                    num_matches=int(x["Kampe"]),
-                    ranking=x["Placering"] if x["Placering"] else -1,
+                    num_points=int(x["Point"]) if pd.notna(x["Point"]) else None,
+                    num_matches=int(x["Kampe"]) if pd.notna(x["Kampe"]) else None,
+                    ranking=int(x["Placering"]) if pd.notna(x["Placering"]) else -1,
                 ),
                 axis=1,
             )
         else:
             standings = pd.Series()
-
-        index += 1
 
         sort = 0
 
@@ -299,9 +288,8 @@ class Client:
             return sort
 
         matches = []
-        if len(tables) > 2:
-            matches = self.__parse_as_df(tables[index])  # holdkampe
-            # if not Kampdato in matches.columns: set empty
+        if TableType.MATCHES in table_mapping:
+            matches = table_mapping[TableType.MATCHES]
 
             if "Kampdato" in matches.columns:
                 matches = matches.apply(
@@ -320,20 +308,21 @@ class Client:
                     axis=1,
                 )
 
-        index += 1
-
         tournaments = []
-        if len(tables) > 3:
-            tournaments_df = self.__parse_as_df(tables[index])  # turneringer
+        if TableType.TOURNAMENTS in table_mapping:
+            tournaments_df = table_mapping[TableType.TOURNAMENTS]
 
             def get_tournament_id(x):
-                print("x", x)
                 number_regex = re.compile(r"\d+")
                 match = number_regex.search(x["Række_html"])
                 return int(match.group())
 
             for row in tournaments_df.iterrows():
                 row = row[1]
+                if "Klub" not in row:
+                    print("Could not find Klub in", tournaments_df.columns)
+                    continue
+
                 tournaments.append(
                     Tournament(
                         bp_id=get_tournament_id(row),
@@ -349,6 +338,32 @@ class Client:
             standings=standings,
             tournaments=tournaments,
         )
+
+    def __identify_tables(
+        self, tables: List[pd.DataFrame]
+    ) -> Dict[TableType, pd.DataFrame]:
+        result = {}
+        for table in tables:
+            if table.empty:
+                continue
+
+            if all([col in table.columns for col in ["Rangliste", "Række", "Point"]]):
+                result[TableType.STANDINGS] = table
+            elif all(
+                [col in table.columns for col in ["Kampdato", "Hold", "Modstander"]]
+            ):
+                result[TableType.MATCHES] = table
+            elif all([col in table.columns for col in ["Række", "Dato", "Klub"]]):
+                result[TableType.TOURNAMENTS] = table
+            elif table.apply(
+                lambda row: row.astype(str)
+                .str.contains("Tilmeldingsniveau ved sæsonstart:")
+                .any(),
+                axis=1,
+            ).any():
+                result[TableType.TILMELDINGSNIVEAU] = table
+
+        return result
 
     def get_match(self, match_id: int) -> TeamMatch:
         print("Getting match", match_id)
