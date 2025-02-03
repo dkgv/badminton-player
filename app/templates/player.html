@@ -24,18 +24,14 @@
                 <h2>Profile</h2>
                 <table class="table table-light table-borderless">
                     <tr>
-                        <th>Name</th>
-                        <td>{{ player.name }}</td>
-                    </tr>
-                    <tr>
-                        <th>Age</th>
-                        <td>{{ player.get_age() }} år</td>
-                    </tr>
-                    <tr>
                         <th>Club</th>
                         <td>
                             <a class="text-decoration-none" href="/club/{{ player.club_id }}">{{ player.club_name }} →</a>
                         </td>
+                    </tr>
+                    <tr>
+                        <th>Age</th>
+                        <td>{{ player.get_age() }} år</td>
                     </tr>
                     <tr>
                         <th>Points</th>
@@ -75,7 +71,7 @@
                         </tr>
                         {% for s in standings %}
                         <tr>
-                            <td>{{ s.category[10:] }} </td>
+                            <td>{{ s.category[10:] }}</td>
                             <td>{{ s.tier }}</td>
                             <td class="text-center">{{ s.num_points }}</td>
                             <td class="text-center">{{ s.num_matches }}</td>
@@ -135,7 +131,8 @@
                         <a class="accordion-button text-decoration-none {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#a{{ match.id }}">
                             <div class="d-flex justify-content-between align-items-center w-100">
                                 <div>
-                                    {% if match.on_winning_team(player.name) %}<span class="badge bg-success me-3" style="width: 30px">W</span>{% else %}<span style="width: 30px" class="badge bg-danger me-3">L</span>{% endif %}{{ match.home_team }} vs {{ match.away_team }} <span class="text-muted">({{ match.home_points }}-{{ match.away_points }})</span>
+                                    {% set outcome = match.get_outcome_for(player.name) %}
+                                    {% if outcome == 'W' %}<span class="badge bg-success me-3" style="width: 30px">W</span>{% elif outcome == 'L' %}<span style="width: 30px" class="badge bg-danger me-3">L</span>{% else %}<span style="width: 30px" class="badge bg-secondary me-3">T</span>{% endif %}{{ match.home_team }} vs {{ match.away_team }} <span class="text-muted">({{ match.home_points }}-{{ match.away_points }})</span>
                                 </div>
                                 {% if match.date %}
                                 <span class="me-3 text-muted">{{ match.date.strftime("%d %b, %Y") }}</span>

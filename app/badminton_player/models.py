@@ -187,12 +187,14 @@ class TeamMatch:
     def away_points(self) -> int:
         return sum([1 for g in self.games if g.get_winner() == "away"])
 
-    def get_winner(self) -> str:
+    def get_outcome(self) -> str:
+        if self.home_points == self.away_points:
+            return "tie"
+
         return "home" if self.home_points > self.away_points else "away"
 
-    def on_winning_team(self, player_name: str) -> bool:
-        home_players = []
-        away_players = []
+    def get_outcome_for(self, player_name: str) -> str:
+        home_players, away_players = [], []
         for g in self.games:
             home_players.append(g.home_player1)
             if g.home_player2:
@@ -205,16 +207,20 @@ class TeamMatch:
         home_players = [p for p in home_players if p]
         away_players = [p for p in away_players if p]
 
+        outcome = self.get_outcome()
+        if outcome == "tie":
+            return "T"
+
         if not self.date:
             players = home_players if home_players else away_players
-            return player_name in players
+            return "W" if player_name in players else "L"
 
-        winner = self.get_winner()
-        return (
+        won = (
             player_name in home_players
-            if winner == "home"
+            if outcome == "home"
             else player_name in away_players
         )
+        return "W" if won else "L"
 
 
 @dataclass
