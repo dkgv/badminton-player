@@ -3,7 +3,7 @@ from dataclasses import fields, is_dataclass
 from postgrest import APIResponse
 
 
-def from_resp(resp: APIResponse, cls):
+def from_resp(resp: APIResponse, cls) -> list:
     rows = resp.data
     if not rows:
         return []

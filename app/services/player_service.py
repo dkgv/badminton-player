@@ -260,7 +260,7 @@ def _try_find_team_matches(player_id: int) -> Optional[List[TeamMatch]]:
         if not meta:
             continue
 
-        games = supabase_utils.from_resp(
+        games: List[Game] = supabase_utils.from_resp(
             supabase_client.from_("games")
             .select("*")
             .eq("bp_match_id", meta.id)
@@ -290,6 +290,9 @@ def _try_find_team_matches(player_id: int) -> Optional[List[TeamMatch]]:
                     int(g.category.strip()[0]) if g.category[0].isdigit() else 0,
                 )
             )
+
+            for g in games:
+                g.date = g.date.replace(tzinfo=None)
 
             print(f"Found games for match id={meta.id}")
 

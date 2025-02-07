@@ -16,11 +16,13 @@ def player(player_id: int):
     if not profile:
         return abort(404)
 
+    streak = player_service.group_games_by_category(profile.games)
+
     return render_template(
         "player.html",
         profile=profile.metadata,
         games=profile.games,
-        streak=player_service.group_games_by_category(profile.games),
+        streak=streak,
         player=profile.player,
         matches=profile.matches,
         standings=profile.standings,
