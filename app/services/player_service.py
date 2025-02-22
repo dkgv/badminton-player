@@ -49,7 +49,9 @@ def get_player_id(name: str, club_name: str) -> Optional[int]:
 
 
 def search_player(name: str, club: str = None) -> List[Player]:
-    query = " | ".join(name.split(" "))
+    parts = name.split(" ")
+    query = " | ".join([p for p in parts if p])
+
     fuzzy_players = supabase_utils.from_resp(
         supabase_client.from_("players")
         .select("*, clubs (name)")
