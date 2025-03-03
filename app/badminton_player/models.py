@@ -154,7 +154,7 @@ class MatchMeta:
     id: int
     sort: int
     date: datetime
-    group: str
+    division: str
     team1: Optional[str]
     team2: Optional[str]
 
@@ -162,7 +162,7 @@ class MatchMeta:
         return {
             "id": self.id,
             "date": self.date,
-            "group": self.group,
+            "division": self.division,
             "team1": self.team1,
             "team2": self.team2,
         }
@@ -172,7 +172,7 @@ class MatchMeta:
 class TeamMatch:
     id: int
     date: datetime
-    group: str
+    division: str | None
     games: List[Game]
     home_team: Optional[str] = None
     away_team: Optional[str] = None

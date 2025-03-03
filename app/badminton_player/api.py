@@ -300,7 +300,7 @@ class Client:
                             if x["Kampdato"].strip()
                             else None
                         ),
-                        group=x["Række"],
+                        division=x["Række"],
                         sort=get_sort(),
                         team1=x["Hold"],
                         team2=x["Modstander"],
@@ -473,7 +473,7 @@ class Client:
 
         return TeamMatch(
             id=int(details["Kampnr"]),
-            group=details["Række"],
+            division=details["Række"],
             date=date,
             home_team=overall_result.find_all("td")[0].text.strip(),
             away_team=overall_result.find_all("td")[4].text.strip(),

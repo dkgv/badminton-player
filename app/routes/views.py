@@ -16,15 +16,17 @@ def player(player_id: int):
     if not profile:
         return abort(404)
 
-    streak = player_service.group_games_by_category(profile.games)
+    grouped_streak = player_service.group_games_by_category(profile.games)
+
+    grouped_matches = player_service.group_matches_by_division(profile.matches)
 
     return render_template(
         "player.html",
         profile=profile.metadata,
         games=profile.games,
-        streak=streak,
+        streak=grouped_streak,
         player=profile.player,
-        matches=profile.matches,
+        matches=grouped_matches,
         standings=profile.standings,
         tournaments=profile.tournaments,
     )

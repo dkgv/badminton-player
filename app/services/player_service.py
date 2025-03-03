@@ -158,6 +158,26 @@ def group_games_by_category(games: List[Game]) -> Dict[str, List[Game]]:
     return {mapping[k]: v for k, v in streak.items() if k in mapping}
 
 
+def group_matches_by_division(matches: List[TeamMatch]) -> List[List[TeamMatch]]:
+    grouped_matches = []
+    curr_group = []
+    prev_division = None
+    for m in matches:
+        if m.division == prev_division:
+            m.division = None
+            curr_group.append(m)
+        else:
+            if curr_group:
+                grouped_matches.append(curr_group)
+            curr_group = [m]
+            prev_division = m.division
+
+    if curr_group:
+        grouped_matches.append(curr_group)
+
+    return grouped_matches
+
+
 def _try_find_standings(player_id: int) -> Optional[List[Standing]]:
     def sort_standings(standings: List[Standing]) -> List[Standing]:
         return sorted(
@@ -301,7 +321,7 @@ def _try_find_team_matches(player_id: int) -> Optional[List[TeamMatch]]:
             match = TeamMatch(
                 id=meta.id,
                 date=meta.date,
-                group=meta.group,
+                division=meta.division.strip(),
                 games=games,
             )
 
@@ -347,7 +367,7 @@ def _try_find_team_matches(player_id: int) -> Optional[List[TeamMatch]]:
         matches.append(match)
 
     matches.sort(key=lambda m: sort_for_match[m.id], reverse=True)
-
+    
     return matches
 
 
