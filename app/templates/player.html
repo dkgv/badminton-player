@@ -125,94 +125,95 @@
             <p class="text-muted">No matches found.</p>
             {% else %}
                 {% for group in matches %}
-                <div class="accordion" id="accordionExample">
+                    {% set outer_index = loop.index0 %}
+                    <div class="accordion" id="accordion-{{ outer_index }}">
                     {% for match in group %}
-                    {% if match.division %}
-                        <h6 class="fw-semibold mt-3">{{ match.division }}</h6>
-                    {% endif %}
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <a class="accordion-button text-decoration-none {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#a{{ match.id }}">
-                                <div class="d-flex justify-content-between align-items-center w-100">
-                                    <div>
-                                        {% set outcome = match.get_outcome_for(player.name) %}
-                                        {% if outcome == 'W' %}<span class="badge bg-success me-3" style="width: 30px">W</span>{% elif outcome == 'L' %}<span style="width: 30px" class="badge bg-danger me-3">L</span>{% else %}<span style="width: 30px" class="badge bg-secondary me-3">T</span>{% endif %}{{ match.home_team }} vs {{ match.away_team }} <span class="text-muted">({{ match.home_points }}-{{ match.away_points }})</span>
+                        {% if match.division %}
+                            <h6 class="fw-semibold mt-3">{{ match.division }}</h6>
+                        {% endif %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" onclick="toggleAccordion({{ outer_index }})">
+                                <a class="accordion-button text-decoration-none {% if not loop.first or outer_index > 0 %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#a{{ match.id }}">
+                                    <div class="d-flex justify-content-between align-items-center w-100">
+                                        <div>
+                                            {% set outcome = match.get_outcome_for(player.name) %}
+                                            {% if outcome == 'W' %}<span class="badge bg-success me-3" style="width: 30px">W</span>{% elif outcome == 'L' %}<span style="width: 30px" class="badge bg-danger me-3">L</span>{% else %}<span style="width: 30px" class="badge bg-secondary me-3">T</span>{% endif %}{{ match.home_team }} vs {{ match.away_team }} <span class="text-muted">({{ match.home_points }}-{{ match.away_points }})</span>
+                                        </div>
+                                        {% if match.date %}
+                                        <span class="me-3 text-muted">{{ match.date.strftime("%d %b, %Y") }}</span>
+                                        {% else %}
+                                        <span class="me-3 text-muted">Forfeit</span>
+                                        {% endif %}
                                     </div>
-                                    {% if match.date %}
-                                    <span class="me-3 text-muted">{{ match.date.strftime("%d %b, %Y") }}</span>
-                                    {% else %}
-                                    <span class="me-3 text-muted">Forfeit</span>
-                                    {% endif %}
-                                </div>
-                            </a>
-                        </h2>
-                        <div id="a{{ match.id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#accordionExample">
-                            <div class="accordion-body">
-                                <table class="table table-borderless">
-                                    <tr>
-                                        <th>
-                                        </th>
-                                        <th>
-                                            🏠 {{ match.home_team }}
-                                        </th>
-                                        <th>
-                                            🚌 {{ match.away_team }}
-                                        </th>
-                                        <th>
-                                            1
-                                        </th>
-                                        <th>
-                                            2
-                                        </th>
-                                        <th>
-                                            3
-                                        </th>
-                                    </tr>
-                                    {% for game in match.games %}
-                                    {% set class = "" %}
-                                    {% if game.contains(player.name) %}
-                                    {% set class = "table-success" if game.won_by(player.name) else "table-danger" %}
-                                    {% endif %}
+                                </a>
+                            </h2>
+                            <div id="a{{ match.id }}" class="accordion-collapse collapse {% if loop.first and outer_index == 0 %}show{% endif %}" data-bs-parent="#accordionExample">
+                                <div class="accordion-body">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <th>
+                                            </th>
+                                            <th>
+                                                🏠 {{ match.home_team }}
+                                            </th>
+                                            <th>
+                                                🚌 {{ match.away_team }}
+                                            </th>
+                                            <th>
+                                                1
+                                            </th>
+                                            <th>
+                                                2
+                                            </th>
+                                            <th>
+                                                3
+                                            </th>
+                                        </tr>
+                                        {% for game in match.games %}
+                                        {% set class = "" %}
+                                        {% if game.contains(player.name) %}
+                                        {% set class = "table-success" if game.won_by(player.name) else "table-danger" %}
+                                        {% endif %}
 
-                                    <tr class="{{ class }}">
-                                        <td>
-                                            {{ game.category }}
-                                        </td>
-                                        {% set hp1 = game.home_player1 %}
-                                        {% set hp2 = game.home_player2 %}
-                                        {% set ap1 = game.away_player1 %}
-                                        {% set ap2 = game.away_player2 %}
-                                        {% set winner = game.get_winner() %}
-                                        <td>
-                                            <span class="fake-link {% if winner == 'home' %}fw-semibold{% endif %}" onclick="discoverPlayer(event, '{{ hp1 }}', '{{ match.home_club }}')">{{ hp1 }}</span>{% if hp2 %} / <span class="fake-link {% if winner == 'home' %}fw-semibold{% endif %}" onclick="discoverPlayer(event, '{{ hp2 }}', '{{ match.home_club }}')">{{ hp2 }}</span>{% endif %}
-                                        </td>
-                                        <td>
-                                            <span class="fake-link {% if winner == 'away' %}fw-semibold{% endif %}" onclick="discoverPlayer(event, '{{ ap1 }}', '{{ match.away_club }}')">{{ ap1 }}</span>{% if ap2 %} / <span class="fake-link {% if winner == 'away' %}fw-semibold{% endif %}" onclick="discoverPlayer(event, '{{ ap2 }}', '{{ match.away_club }}')">{{ ap2 }}</span>{% endif %}
-                                        </td>
-                                        <td>
-                                            {% if game.sets|length > 0 %}
-                                            {{ game.sets[0].to_html(winner) }}
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if game.sets|length > 1 %}
-                                            {{ game.sets[1].to_html(winner) }}
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if game.sets|length > 2 %}
-                                            {{ game.sets[2].to_html(winner) }}
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </table>
+                                        <tr class="{{ class }}">
+                                            <td>
+                                                {{ game.category }}
+                                            </td>
+                                            {% set hp1 = game.home_player1 %}
+                                            {% set hp2 = game.home_player2 %}
+                                            {% set ap1 = game.away_player1 %}
+                                            {% set ap2 = game.away_player2 %}
+                                            {% set winner = game.get_winner() %}
+                                            <td>
+                                                <span class="fake-link {% if winner == 'home' %}fw-semibold{% endif %}" onclick="discoverPlayer(event, '{{ hp1 }}', '{{ match.home_club }}')">{{ hp1 }}</span>{% if hp2 %} / <span class="fake-link {% if winner == 'home' %}fw-semibold{% endif %}" onclick="discoverPlayer(event, '{{ hp2 }}', '{{ match.home_club }}')">{{ hp2 }}</span>{% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="fake-link {% if winner == 'away' %}fw-semibold{% endif %}" onclick="discoverPlayer(event, '{{ ap1 }}', '{{ match.away_club }}')">{{ ap1 }}</span>{% if ap2 %} / <span class="fake-link {% if winner == 'away' %}fw-semibold{% endif %}" onclick="discoverPlayer(event, '{{ ap2 }}', '{{ match.away_club }}')">{{ ap2 }}</span>{% endif %}
+                                            </td>
+                                            <td>
+                                                {% if game.sets|length > 0 %}
+                                                {{ game.sets[0].to_html(winner) }}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if game.sets|length > 1 %}
+                                                {{ game.sets[1].to_html(winner) }}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if game.sets|length > 2 %}
+                                                {{ game.sets[2].to_html(winner) }}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </table>
+                                </div>
                             </div>
                         </div>
-                    </div>
                     {% endfor %}
+                    </div>
                 {% endfor %}
-            </div>
             {% endif %}
         </div>
     </div>
@@ -312,5 +313,46 @@
         };
         xhr.send();
     }
+
+    function toggleAccordion(clickedItem) {
+        const allAccordionContainers = document.querySelectorAll(".accordion");
+    
+        allAccordionContainers.forEach((container) => {
+            const accordionItems = container.querySelectorAll(".accordion-item");
+        
+            accordionItems.forEach((item) => {
+                const collapseElement = item.querySelector(".accordion-collapse");
+                const buttonElement = item.querySelector(".accordion-button");
+                
+                // Check if this is not the clicked item
+                if (item !== clickedItem.closest(".accordion-item")) {
+                    const bsCollapse = new bootstrap.Collapse(collapseElement, {
+                        toggle: false // Prevent toggling, just hide
+                    });
+                    bsCollapse.hide();
+                    
+                    // Remove active styling from other buttons
+                    buttonElement.classList.add("collapsed");
+                } else {
+                    // Ensure the clicked item is expanded and styled correctly
+                    const bsCollapse = new bootstrap.Collapse(collapseElement, {
+                        toggle: false
+                    });
+                    bsCollapse.show();
+                    buttonElement.classList.remove("collapsed");
+                }
+            });
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const accordionHeaders = document.querySelectorAll(".accordion-header .accordion-button");
+    
+        accordionHeaders.forEach(header => {
+            header.addEventListener("click", function() {
+                toggleAccordion(this);
+            });
+        });
+    });
 </script>
 {% endblock %}
